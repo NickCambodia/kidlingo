@@ -497,6 +497,19 @@ details.grown-up p{margin:8px 0 0;font-size:15px;line-height:1.6}
   .talk-card .art.xl{width:min(100%,440px,30vh)}
 }
 
+/* ---------- home: play buttons stay at the top, 🚃 back to the train (2026-10-09) ----------
+   The journey scrolls inside <main>, so iPhone's tap-the-clock-to-scroll-up doesn't reach it: keep the four play
+   buttons pinned (a slim row) and offer 🚃 when the train's stop is out of sight. */
+.free{position:sticky;top:-10px;z-index:8;margin:-10px 0 6px;padding:10px 0 12px;background:linear-gradient(var(--paper) 78%,transparent)}
+.fp{gap:0;padding:5px 2px 4px;border-radius:16px;font-size:clamp(12px,3.4vw,16px);white-space:nowrap}
+.fp .emo,.fp .kana{font-size:clamp(18px,5vw,24px)}
+.gobar{position:sticky}
+.totrain{position:absolute;right:0;bottom:calc(100% - 6px);width:56px;height:56px;border:0;border-radius:50%;background:var(--card);box-shadow:0 4px 0 var(--line),0 6px 16px rgba(30,42,69,.14);display:grid;place-items:center;cursor:pointer;animation:tpop .3s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes tpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){ .totrain{animation:none} }
+.totrain .emo{font-size:30px;line-height:1}
+.totrain:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+
 </style>
 </head>
 <body>
@@ -1522,7 +1535,7 @@ function home(){
       <div class="jgoal" style="top:${H - 64}px"><span class="emo">🎌</span><span>ゴール</span></div>
       <span class="train" id="train" style="left:${tx}%;top:${ty}px" aria-hidden="true">🚃</span>
     </div>
-    <div class="gobar"><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
+    <div class="gobar"><button class="totrain" id="toTrain" aria-label="でんしゃに もどる" hidden><span class="emo">🚃</span></button><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
   bindGo();
   view.querySelectorAll('.stop').forEach(b => b.onclick = () => {
     if(b.classList.contains('lock')){ sfx.no(); shake(b); return; }
@@ -1532,6 +1545,13 @@ function home(){
     const d = el.getBoundingClientRect().top - view.getBoundingClientRect().top - view.clientHeight * .42;
     view.scrollTo({top: view.scrollTop + d, behavior: smooth && !reduce ? 'smooth' : 'auto'}); };
   centre(ARRIVE ? ARRIVE.from : here);
+  /* 🚃 back to the train: shown only while the train's stop is scrolled out of sight */
+  const tt = $('#toTrain'), mine = view.querySelector(`[data-stop="${STOPS[here].id}"]`);
+  tt.onclick = () => { sfx.tap(); centre(here, true); };
+  const seen = () => { if(!mine || !mine.isConnected){ view.removeEventListener('scroll', seen); return; }
+    const r = mine.getBoundingClientRect(), v = view.getBoundingClientRect();
+    tt.hidden = r.bottom > v.top + 70 && r.top < v.bottom - 110; };
+  view.addEventListener('scroll', seen, {passive:true});
   if(!ARRIVE) return;
   const from = ARRIVE.from; ARRIVE = null;
   const tr = $('#train'), now = view.querySelector('.stop.now');

@@ -46,6 +46,9 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
 - **Phrase lesson**: learn cards → 4× なんていう？ → 3× listen → 2× read (picture answers in a 2×2 grid; family phrases,
   which have no picture, in one wide column) → shadowing with
   **hear yourself**: 🎤 records up to 6 s (`bindRecorder`, https only), 👂 replays it; a grown-up taps いえた！.
+- **Home** (2026-10-09): the four play buttons (ことば おはなし かく シール) stay pinned at the top while the journey
+  scrolls (the journey scrolls inside `<main>`, so iPhone's tap-the-clock-to-top doesn't work); a round 🚃 button
+  (`#toTrain`) appears above つぎ when the train's stop is out of sight and glides back to it.
 - **Phrase pictures** (2026-10-09, `src/art.js`): every phrase has a picture-book scene, number `w.n` (1-59 in
   `PHRASES` order = `art/PROMPTS.md`). Same four characters everywhere (Sora, yellow T-shirt; Mama, light blue
   cardigan; Papa, green shirt; Mei, pink dress, pigtails). The one who SAYS the phrase is on the LEFT with a speech

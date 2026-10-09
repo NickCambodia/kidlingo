@@ -304,7 +304,7 @@ function home(){
       <div class="jgoal" style="top:${H - 64}px"><span class="emo">🎌</span><span>ゴール</span></div>
       <span class="train" id="train" style="left:${tx}%;top:${ty}px" aria-hidden="true">🚃</span>
     </div>
-    <div class="gobar"><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
+    <div class="gobar"><button class="totrain" id="toTrain" aria-label="でんしゃに もどる" hidden><span class="emo">🚃</span></button><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
   bindGo();
   view.querySelectorAll('.stop').forEach(b => b.onclick = () => {
     if(b.classList.contains('lock')){ sfx.no(); shake(b); return; }
@@ -314,6 +314,13 @@ function home(){
     const d = el.getBoundingClientRect().top - view.getBoundingClientRect().top - view.clientHeight * .42;
     view.scrollTo({top: view.scrollTop + d, behavior: smooth && !reduce ? 'smooth' : 'auto'}); };
   centre(ARRIVE ? ARRIVE.from : here);
+  /* 🚃 back to the train: shown only while the train's stop is scrolled out of sight */
+  const tt = $('#toTrain'), mine = view.querySelector(`[data-stop="${STOPS[here].id}"]`);
+  tt.onclick = () => { sfx.tap(); centre(here, true); };
+  const seen = () => { if(!mine || !mine.isConnected){ view.removeEventListener('scroll', seen); return; }
+    const r = mine.getBoundingClientRect(), v = view.getBoundingClientRect();
+    tt.hidden = r.bottom > v.top + 70 && r.top < v.bottom - 110; };
+  view.addEventListener('scroll', seen, {passive:true});
   if(!ARRIVE) return;
   const from = ARRIVE.from; ARRIVE = null;
   const tr = $('#train'), now = view.querySelector('.stop.now');
