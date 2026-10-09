@@ -38,7 +38,7 @@ inline = {k: "data:audio/mp4;base64," + v for k, v in clips.items()}
 def assemble(audio_map):
     return (shell
         .replace("/*@@STYLES@@*/", (src / "styles.css").read_text(encoding="utf-8"))
-        .replace("/*@@DATA@@*/", (src / "data.js").read_text(encoding="utf-8") + "\n" + (src / "strokes.js").read_text(encoding="utf-8"))
+        .replace("/*@@DATA@@*/", "\n".join((src / f).read_text(encoding="utf-8") for f in ("data.js", "strokes.js", "art.js")))
         .replace("/*@@APP@@*/", (src / "app.js").read_text(encoding="utf-8")
                  .replace("__VOICE_CREDIT__", json.loads((ROOT / "audio" / "clips.meta.json").read_text(encoding="utf-8")).get("credit", "")))
         .replace("/*@@AUDIO@@*/", json.dumps(audio_map, ensure_ascii=False).replace("</", "<\\/")))

@@ -57,7 +57,9 @@ function romaji(str){
     return out;
   }).join(' ').replace(/、/g, ', ').replace(/！/g,'!').replace(/？/g,'?');
 }
-PHRASES.forEach(t => t.words = t.words.map(([k,p,en,sc]) => ({k, p, en, sc, t:t.id, phrase:true})));
+/* n: the phrase's number (1-59), its picture in art.js and art/PROMPTS.md */
+let phraseN = 0;
+PHRASES.forEach(t => t.words = t.words.map(([k,p,en,sc]) => ({k, p, en, sc, t:t.id, phrase:true, n:++phraseN})));
 /* Sound lessons: long sounds (ー, ああ/いい/うう…) and small っ. Each is a full beat (拍): Japanese teachers have children
    clap them. Each word: [kana, picture, English, wrong spellings a child might hear instead]. Steps: learn (beats shown),
    "ただしい ほうは どれですか？" (pick the spelling), "いくつ たたきますか？" (count the beats). */

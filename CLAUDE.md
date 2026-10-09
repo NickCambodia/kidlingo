@@ -24,6 +24,7 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
 | `src/styles.css` | All CSS. Tokens on `:root` (paper/ink/shu red/leaf/sun/sky/plum). Deliberately light-only and playful (it's for kids). |
 | `src/data.js` | All content: `THEMES`, `PHRASES` (optional scene `sc`), `EN`, `TALK`, kana tables + `STROKES`, `romaji()`, `SPOKEN_EXTRA`, `JOURNEY`, `rowChars()` |
 | `src/app.js` | Storage, audio, rewards, journey, screens, games, recording, parent mode |
+| `src/art.js` | `KART`: the 59 phrase pictures, drawn in SVG by code (characters, poses, faces, skies, rooms, props); `KART.scene(n)` |
 | `web/` | `sw.js` (offline), `manifest.webmanifest`, `icons/` (icon-180/192/512: a red はなまる around あ) |
 | `docs/audio/` | One small .m4a per clip (named by content hash), written by the build; the page only carries the list |
 | `audio/clips.json` | `{ "japanese text": base64 AAC (.m4a) }`, inlined into the build; `clips.meta.json` = engine id |
@@ -42,9 +43,17 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
   the classroom 五十音表 (11 columns あ…ん, top to bottom, right to left) at ≥820px. The top bar follows the page width.
 - **Screens** (`go(name, arg)`): `home`, `themes`, `phrases`, `lesson`, `kana`, `trace`, `stickers`, `parent`.
 - **Word lesson**: learn cards → 5× listen-and-tap → 4× read-and-tap → memory match → "say it to Mama/Papa".
-- **Phrase lesson**: learn cards → 4× なんていう？ → 3× listen → 2× read (answers in one wide column) → shadowing with
+- **Phrase lesson**: learn cards → 4× なんていう？ → 3× listen → 2× read (picture answers in a 2×2 grid; family phrases,
+  which have no picture, in one wide column) → shadowing with
   **hear yourself**: 🎤 records up to 6 s (`bindRecorder`, https only), 👂 replays it; a grown-up taps いえた！.
-- **Phrase scenes** (`sc` in `PHRASES`, rendered by `scene()`): the speaker gets the speech bubble, an arrow shows
+- **Phrase pictures** (2026-10-09, `src/art.js`): every phrase has a picture-book scene, number `w.n` (1-59 in
+  `PHRASES` order = `art/PROMPTS.md`). Same four characters everywhere (Sora, yellow T-shirt; Mama, light blue
+  cardigan; Papa, green shirt; Mei, pink dress, pigtails). The one who SAYS the phrase is on the LEFT with a speech
+  bubble (dots pulse; bubbles are drawn last so nothing covers them). Time of day must be obvious: morning = rising
+  sun low, afternoon = high sun, evening = sunset, night = moon and stars (indoors: through the window, plus a lit
+  lamp). No text in pictures. `pic()` uses the drawing when `hasArt(w)`; sizes by screen height (`.art.xl`).
+  Nick may later replace them with Gemini images (prompts in `art/PROMPTS.md`, git-ignored).
+- **Emoji phrase scenes** (`sc` in `PHRASES`, rendered by `scene()`, now only a fallback): the speaker gets the speech bubble, an arrow shows
   leaving (➡️) or coming home (⬅️), 🌅/🌇 the time of day. Used where emoji alone were ambiguous (いってきます,
   いってらっしゃい, ただいま, おかえり, ありがとう, どういたしまして, どうぞ, ごめんなさい, いいよ).
 - **Stars**: lessons from first tries (`tally`; ≥85% 3, ≥50% 2, else 1); kana rows from failed checks (0 = 3, ≤2 = 2).
@@ -91,7 +100,8 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
   learn cards, never in games. Parent mode has English + romaji, progress, talk-together lines, settings, backup.
 - Cultural rewards: はなまる, hanko, masu squares, and the e-sugoroku journey (the traditional Japanese picture board
   game of travel; Japanese children still make their own at school).
-- Everyday child-life phrases, not travel phrases. Emoji are the illustrations; scenes compose emoji.
+- Everyday child-life phrases, not travel phrases. Emoji illustrate words; phrases have drawn scenes (Nick: emoji
+  alone were hard to understand).
 - **Audio pacing**: audio that starts by itself waits `LEAD` (450 ms) after a screen appears; parts of one prompt have
   `GAP` (380 ms) between them; every clip starts with 150 ms of silence. The first tap also plays a silent sound on the
   shared `player` so iPhones allow later playback.
@@ -127,6 +137,8 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
 1. Words: `['かな','emoji']` in a `THEMES` topic **and** the English in `EN[topicId]` at the same index. New topics
    also need a `TALK` entry (parent mode crashes without it), a `hue`, and a place in `JOURNEY`.
 2. Phrases: `['かな','emoji','English']` (+ optional scene `{s:[...], sp, t, sub}`). Spaces between bunsetsu.
+   Phrases are numbered by position, so add new ones at the END of `PHRASES` (or renumber `SC` in `art.js`), and draw
+   a scene for the new number in `art.js`.
 3. Katakana topics: `kata:true`.
 4. Regenerate audio, build, check screenshots (phone 430px and iPad 1024px).
 

@@ -455,3 +455,27 @@ details.grown-up p{margin:8px 0 0;font-size:15px;line-height:1.6}
   .prompt{min-height:54px;margin-bottom:8px} .rail{margin-bottom:6px} .learn-card{gap:10px} .mean-row{margin-top:8px;min-height:40px}
   .beat-opt{padding-block:8px}
 }
+
+/* ---------- phrase pictures (2026-10-09): picture-book scenes from src/art.js, 3:2 ----------
+   Sized by the screen height too, so the buttons below stay on screen. The speaker's bubble dots pulse. */
+.art{display:block;line-height:0;margin-inline:auto}
+.art svg{display:block;width:100%;height:auto;border-radius:18px;box-shadow:0 0 0 1px var(--line)}
+.art.xl{width:min(100%,440px,46vh)}
+.scene .art.xl{width:min(100%,420px,34vh)}
+.talk-card .art.xl{width:min(100%,440px,40vh)}
+.art.l,.art.s{width:100%}
+.choices.arts{gap:10px}
+.choices.arts .choice{height:auto;padding:6px;border-radius:20px}
+.choices.arts .art svg{border-radius:14px}
+.art .kb-d{animation:talk 1.2s infinite}
+.art .kb-d:nth-child(5){animation-delay:.2s} .art .kb-d:nth-child(6){animation-delay:.4s}
+@media (prefers-reduced-motion:reduce){ .art .kb-d{animation:none} }
+.learn-card:has(.art){min-height:0;padding:clamp(12px,2vh,22px);gap:clamp(8px,1.6vh,14px)}
+.learn-card .art.xl{width:min(100%,440px,max(160px,calc((100dvh - 450px) * 1.5)))}
+.talk-card .art.xl{width:min(100%,440px,34vh)}
+@media (max-height:720px){
+  .ph{font-size:clamp(22px,6.2vw,32px)!important} .talk-card .ph{font-size:clamp(22px,6vw,30px)!important}
+  .say-opt{font-size:clamp(18px,5vw,24px)}
+  .scene .art.xl{width:min(100%,420px,30vh)}
+  .talk-card .art.xl{width:min(100%,440px,30vh)}
+}

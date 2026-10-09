@@ -173,7 +173,10 @@ const spk = (id, cls='') => `<button class="spk ${cls}" id="${id}" aria-label="�
 function scene(sc, size){
   return `<span class="scn ${size}" aria-hidden="true">${sc.t ? `<span class="scn-t">${sc.t}</span>` : ''}${sc.s.map((e,i) =>
     `<span class="scn-s${/^(➡️|⬅️)$/.test(e) ? ' arr' : ''}${i === sc.sp ? ' sp' : ''}">${i === sc.sp ? '<span class="bub"><i></i><i></i><i></i></span>' : ''}${sc.sub && sc.sub.i === i ? `<span class="bub sub">${sc.sub.e}</span>` : ''}<span class="emo">${e}</span></span>`).join('')}</span>`; }
+/* Phrases have a drawn picture (src/art.js); family phrases keep their emoji. */
+const hasArt = w => !!(w.n && typeof KART !== 'undefined' && KART.has(w.n));
 function pic(w, size){ const p = w.p;
+  if(hasArt(w)) return `<span class="art ${size}" aria-hidden="true">${KART.scene(w.n)}</span>`;
   if(w.sc) return scene(w.sc, size);
   if(typeof p === 'string') return `<span class="emo ${size}" aria-hidden="true">${p}</span>`;
   if(p.c) return `<span class="swatch ${size}" style="--sw:${p.c}" aria-hidden="true"></span>`;
@@ -406,6 +409,8 @@ function stBeats(s){
   });
 }
 const isP = () => L.t.kind === 'phrase';
+/* phrase answers: pictures in a 2×2 grid; family phrases (emoji) in one column */
+const chCls = opts => opts.every(hasArt) ? ' arts' : isP() ? ' wide' : '';
 /* the meaning behind ?: English, or Khmer when a grown-up chooses it (KM is a draft until Nick has checked it) */
 const meaning = w => S.settings.hint === 'km' && KM[w.k] ? `<span class="km" lang="km">${KM[w.k]}</span>` : w.en;
 
@@ -444,7 +449,7 @@ function stLearn(){
 function stListen(s){
   const w = s.w, opts = options(w); let first = true, locked = false;
   h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">どれですか？</span></div>
-    <div class="choices${isP() ? ' wide' : ''}">${opts.map((o,i) => `<button class="choice" data-i="${i}" aria-label="${o.k}">${pic(o,'l')}</button>`).join('')}</div>`);
+    <div class="choices${chCls(opts)}">${opts.map((o,i) => `<button class="choice" data-i="${i}" aria-label="${o.k}">${pic(o,'l')}</button>`).join('')}</div>`);
   ask(qWhich(w.k), ['どれですか？', w.k]);
   $('#sp').onclick = () => say(w.k);
   view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
@@ -458,7 +463,7 @@ function stRead(s){
   const w = s.w, opts = options(w); let first = true, hinted = false, locked = false;
   h(`${stepsBar()}<div class="prompt">${spk('sp','hint')}<span class="kana read-word${isP()?' ph':''}">${w.k}</span></div>
     <p class="sub">よんで えらんで ください</p>
-    <div class="choices${isP() ? ' wide' : ''}">${opts.map((o,i) => `<button class="choice" data-i="${i}" aria-label="${o.k}">${pic(o,'l')}</button>`).join('')}</div>`);
+    <div class="choices${chCls(opts)}">${opts.map((o,i) => `<button class="choice" data-i="${i}" aria-label="${o.k}">${pic(o,'l')}</button>`).join('')}</div>`);
   say('よんで えらんで ください');
   $('#sp').onclick = () => { hinted = true; say(w.k); };
   view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
