@@ -14,7 +14,7 @@ Only missing or changed clips are made; unused ones are removed. Switching voice
 Setup once: python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt, and unzip the VOICEVOX engine
 (voicevox_engine-macos-arm64-*.vvpp from github.com/VOICEVOX/voicevox_engine/releases) into tools/voicevox_engine.
 """
-import base64, json, os, subprocess, sys, tempfile, time, urllib.parse, urllib.request
+import base64, json, os, re, subprocess, sys, tempfile, time, urllib.parse, urllib.request
 from pathlib import Path
 import numpy as np
 import soundfile as sf
@@ -47,6 +47,10 @@ def spoken(text):
     """The text as the voice should read it: the kanji version if there is one, without the spaces that young readers
     need (VOICEVOX would read every space as a comma, word by word)."""
     t = SPEAK_AS.get(text) or READ_AS.get(text) or text
+    m = re.match(r"^()(.+?)()(は どれですか？|は いくつ たたきますか？|、ただしい ほうは どれですか？)$", text)
+    if m and text not in SPEAK_AS:   # a quiz question: read the word as it is read on its own (kanji for the pitch accent)
+        w = SPEAK_AS.get(m.group(2), m.group(2)); w = m.group(2) if w.startswith("kana:") else w
+        t = m.group(1) + w + m.group(3) + m.group(4)
     return t.replace(" ", "").replace("\u3000", "")
 
 

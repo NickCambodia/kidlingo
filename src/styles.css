@@ -418,3 +418,40 @@ body.wide .bar{max-width:none}
 
 /* Khmer meaning hints */
 .km{font-family:'Noto Sans Khmer','Khmer Sangam MN',sans-serif;font-weight:500;line-height:1.6}
+
+/* ---------- fit the phone (2026-10-09): the next step never leaves the screen ----------
+   Lesson buttons dock at the bottom of the scrolling view; pictures and cards size by the screen height as well as
+   the width, so on a short phone they shrink instead of pushing the buttons down. */
+.page{min-height:100%;display:flex;flex-direction:column}
+.nav-row.dock{position:sticky;bottom:0;z-index:4;margin-top:auto;padding:14px 0 calc(6px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(transparent,var(--paper) 30%);margin-bottom:-28px}
+.nav-row.dock:not(.center):not(.tnav){flex-wrap:nowrap}
+.page > .nav-row.dock{margin-top:auto}
+.learn-card{min-height:clamp(200px,min(55vw,42vh),380px)}
+.emo.xl{font-size:clamp(78px,min(30vw,19vh),168px)}
+.learn-card .word{font-size:clamp(36px,min(12vw,8vh),68px)}
+.scn.xl{font-size:clamp(38px,min(13vw,8.5vh),72px)}
+.talk-card{padding:18px 16px;gap:10px}
+.choice{height:clamp(104px,min(32vw,21vh),200px)}
+.choices.wide .choice{height:clamp(70px,min(22vw,12vh),120px)}
+.mgrid{gap:8px}
+@media (max-height:780px){ .mgrid{grid-template-columns:repeat(4,minmax(0,1fr))} .mcard .back .hm{width:34px;height:34px} }
+details.grown-up{max-width:44ch;text-align:center}
+details.grown-up summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--muted)}
+details.grown-up summary::-webkit-details-marker{display:none}
+details.grown-up p{margin:8px 0 0;font-size:15px;line-height:1.6}
+.qbtn.small{width:28px;height:28px;font-size:16px;display:inline-grid;place-items:center}
+.masu-wrap{width:min(100%,380px,44vh)}
+.kwords{flex-wrap:nowrap;gap:8px;margin-top:10px}
+.kw{padding:4px 10px 4px 6px;font-size:clamp(17px,4.6vw,24px)}
+.stroke-row{margin-top:8px}
+/* choice screens (say / spell / beats): a smaller picture on short screens, so every answer is visible */
+.scene{padding:clamp(10px,2vh,20px);margin-bottom:clamp(8px,1.6vh,16px)}
+.scene .emo.xl{font-size:clamp(60px,min(28vw,14vh),150px)}
+.scene .scn.xl{font-size:clamp(34px,min(12vw,7vh),68px)}
+.scene .swatch.xl{width:clamp(80px,min(30vw,15vh),170px)}
+@media (max-height:720px){
+  .say-opts,.spell-opts{gap:9px} .say-opt{min-height:52px;padding:8px 14px} .spell-opt{min-height:56px}
+  .prompt{min-height:54px;margin-bottom:8px} .rail{margin-bottom:6px} .learn-card{gap:10px} .mean-row{margin-top:8px;min-height:40px}
+  .beat-opt{padding-block:8px}
+}

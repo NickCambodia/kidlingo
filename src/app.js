@@ -60,6 +60,8 @@ const rateFor = () => S.settings.speed === 2 ? 1.15 : 1;
 const clipKey = t => S.settings.speed === 0 && CLIPS['slow:' + t] ? 'slow:' + t : t;
 let lastSaid = null;
 const srcOf = t => (famOn() && FAM[t]) || CLIPS[clipKey(t)];
+/* a quiz question as one natural sentence (word first); the two-part version if that clip is missing (family phrases) */
+const ask = (q, parts) => say(srcOf(q) ? q : parts);
 function say(text, rate){
   const parts = [].concat(text), r = rate || S.settings.rate;
   lastSaid = parts[parts.length - 1];
@@ -380,7 +382,7 @@ function stSpell(s){
   h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">ただしい ほうは どれですか？</span></div>
     <div class="scene">${pic(w,'xl')}</div>
     <div class="spell-opts">${opts.map((o,i) => `<button class="spell-opt kana" data-i="${i}">${o}</button>`).join('')}</div>`);
-  say(['ただしい ほうは どれですか？', w.k]);
+  ask(qSpell(w.k), ['ただしい ほうは どれですか？', w.k]);
   $('#sp').onclick = () => say(w.k);
   view.querySelectorAll('.spell-opt').forEach(b => b.onclick = () => {
     if(locked) return; const o = opts[+b.dataset.i];
@@ -394,7 +396,7 @@ function stBeats(s){
   h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">いくつ たたきますか？</span></div>
     <div class="scene">${pic(w,'xl')}<span class="kana word bword" id="bword">${w.k}</span></div>
     <div class="beat-opts">${choices.map(c => `<button class="beat-opt" data-n="${c}" aria-label="${c}"><span class="claps">${'👏'.repeat(c)}</span><b>${c}</b></button>`).join('')}</div>`);
-  say(['いくつ たたきますか？', w.k]);
+  ask(qBeats(w.k), ['いくつ たたきますか？', w.k]);
   $('#sp').onclick = () => say(w.k);
   view.querySelectorAll('.beat-opt').forEach(b => b.onclick = () => {
     if(locked) return; const c = +b.dataset.n;
@@ -428,7 +430,7 @@ function stLearn(){
     h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">さわって きいて ください</span></div>
       <button class="learn-card" id="lc" aria-label="${w.k}">${pic(w,'xl')}${isS() ? beatRow(w.k) : S.settings.kana || isP() ? `<span class="kana word${isP()?' ph':''}">${w.k}</span>` : ''}</button>
       <div class="mean-row"><button class="qbtn" id="qm" aria-label="Show meaning" aria-expanded="false">?</button><span class="meaning" id="mean" hidden>${meaning(w)}</span></div>
-      <div class="nav-row"><button class="btn" id="pv" aria-label="まえ" ${j===0?'disabled':''}>◀</button><span class="count">${j+1} / ${W.length}</span><button class="btn primary" id="nx" aria-label="つぎ">${j===W.length-1?'つぎへ ▶':'▶'}</button></div>`);
+      <div class="nav-row dock"><button class="btn" id="pv" aria-label="まえ" ${j===0?'disabled':''}>◀</button><span class="count">${j+1} / ${W.length}</span><button class="btn primary" id="nx" aria-label="つぎ">${j===W.length-1?'つぎへ ▶':'▶'}</button></div>`);
     say(intro ? [isS() ? 'てを たたいて かぞえましょう' : 'さわって きいて ください', w.k] : w.k);
     $('#lc').onclick = () => { say(w.k); bump($('#lc')); };
     $('#sp').onclick = () => say(w.k);
@@ -443,7 +445,7 @@ function stListen(s){
   const w = s.w, opts = options(w); let first = true, locked = false;
   h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">どれですか？</span></div>
     <div class="choices${isP() ? ' wide' : ''}">${opts.map((o,i) => `<button class="choice" data-i="${i}" aria-label="${o.k}">${pic(o,'l')}</button>`).join('')}</div>`);
-  say(['どれですか？', w.k]);
+  ask(qWhich(w.k), ['どれですか？', w.k]);
   $('#sp').onclick = () => say(w.k);
   view.querySelectorAll('.choice').forEach(b => b.onclick = () => {
     if(locked) return; const o = opts[+b.dataset.i];
@@ -493,9 +495,9 @@ function stTalk(){
       h(`${stepsBar()}<div class="prompt"><span class="prompt-text">まねして いって みましょう！</span></div>
         <div class="talk-card">${pic(w,'xl')}<span class="kana word ph">${w.k}</span>
           <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button>${canRecord() ? `<button class="btn round mic" id="mic" aria-label="ろくおん">${MIC}</button><button class="btn round me" id="me" aria-label="じぶんの こえ" hidden>${EAR}</button>` : ''}</div>
-          <p class="grown-up">Grown-up: let them listen, then say it back together.${canRecord() ? ' The microphone records them so they can hear themselves.' : ''} Tap <b>いえました！</b> when they say it. <br>Meaning: <b>${meaning(w)}</b></p>
+          <details class="grown-up"><summary><span class="qbtn small" aria-hidden="true">?</span>For grown-ups</summary><p>Let them listen, then say it back together.${canRecord() ? ' The microphone records them so they can hear themselves.' : ''} Tap <b>いえました！</b> when they say it. <br>Meaning: <b>${meaning(w)}</b></p></details>
         </div>
-        <div class="nav-row"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
+        <div class="nav-row dock"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
       say(j === 0 ? ['まねして いって みましょう', w.k] : w.k);
       $('#hear').onclick = () => say(w.k);
       if(canRecord()) bindRecorder($('#mic'), $('#me'));
@@ -508,9 +510,10 @@ function stTalk(){
   const draw = () => { if(j >= ws.length) return next(); const w = ws[j];
     h(`${stepsBar()}<div class="prompt"><span class="prompt-text">ママや パパと いって みましょう！</span></div>
       <div class="talk-card">${pic(w,'xl')}
-        <p class="grown-up">Grown-up: point and ask <b class="kana">これは なんですか？</b> Tap <b>いえました！</b> when they say it in Japanese.<br>Answer: <b class="kana">${w.k}</b> <button class="linkish" id="hear">hear it</button></p>
+        <details class="grown-up"><summary><span class="qbtn small" aria-hidden="true">?</span>For grown-ups</summary><p>Point and ask <b class="kana">これは なんですか？</b> Tap <b>いえました！</b> when they say it in Japanese.<br>Answer: <b class="kana">${w.k}</b></p></details>
+        <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button></div>
       </div>
-      <div class="nav-row"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
+      <div class="nav-row dock"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
     $('#hear').onclick = () => say(w.k);
     $('#skip').onclick = () => { j++; draw(); };
     $('#said').onclick = () => { sfx.ok(); rec(w.k, true); tally(true); addHana(1); j++; setTimeout(draw, 450); };
@@ -531,7 +534,7 @@ function finishScreen(id, stars, earned, was, again){
   h(`<div class="finish"><div class="stamp-wrap">${hanko()}</div>
     <div class="fstars">${[1,2,3].map(n => `<span class="${n <= stars ? 'on' : ''}" style="--d:${n*.18}s">${hanamaru(54)}</span>`).join('')}</div>
     <p class="earned">${hanamaru(30)}<span>+${earned}</span></p>
-    <div class="nav-row center"><button class="btn" id="again">もういちど</button><button class="btn primary" id="onward">つぎ ▶</button></div></div>`);
+    <div class="nav-row center dock"><button class="btn" id="again">もういちど</button><button class="btn primary" id="onward">つぎ ▶</button></div></div>`);
   $('#again').onclick = again; $('#onward').onclick = () => { sfx.tap(); go('home'); };
   sfx.win(); say('よく できました！'); confetti(); setTimeout(checkStickers, 1500);
 }
@@ -595,7 +598,7 @@ function trace(k){
     <div class="stroke-row" id="srow"><span class="kana">${n}</span><span>かいで かきましょう</span><span class="sdots" id="sdots">${'<i></i>'.repeat(n)}</span></div>
     ${words.length ? `<div class="kwords">${words.map(([w,e]) => `<button class="kw" data-w="${esc(w)}"><span class="emo">${e}</span><span class="kana">${kwHTML(w, k)}</span></button>`).join('')}</div>` : ''}
     ${PAIR[k] ? `<p class="pair">ひらがな <button class="pair-chip kana" id="pairBtn">${PAIR[k]}</button> と おなじ おとです</p>` : ''}
-    <div class="nav-row tnav"><button class="btn round" id="tsay" aria-label="きく">${SPK}</button><button class="btn" id="twatch" aria-label="かきじゅんを みる">▶ かきじゅん</button><button class="btn" id="tclear">けします</button><button class="btn primary" id="tnext" hidden>つぎ ▶</button></div>`);
+    <div class="nav-row tnav dock"><button class="btn round" id="tsay" aria-label="きく">${SPK}</button><button class="btn" id="twatch" aria-label="かきじゅんを みる">▶ かきじゅん</button><button class="btn" id="tclear">けします</button><button class="btn primary" id="tnext" hidden>つぎ ▶</button></div>`);
   $('#tp').onclick = () => go('trace', LIST[idx-1]);
   $('#tn').onclick = () => go('trace', LIST[idx+1]);
   if(PAIR[k]) $('#pairBtn').onclick = () => say(PAIR[k]);

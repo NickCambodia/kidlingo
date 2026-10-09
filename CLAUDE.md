@@ -70,6 +70,14 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
   "じゅんばんが ちがいます"; else "もう いちど かきましょう", and the correct stroke replays. Done after the last stroke
   (hanko, はなまる). Under the box: `KANA_WORDS` (2-3 words per kana, kana highlighted, tap to hear; ヲ has none).
   In a journey row (`RS`) mistakes count against the stars.
+- **Quiz questions say the word first** (Nick 2026-10-09: "in Japanese we say the word first"): one natural sentence per
+  word, coach voice, e.g. 「いぬは どれですか？」 (listen), 「ケーキ、ただしい ほうは どれですか？」 (spell), 「ケーキは いくつ
+  たたきますか？」 (beats). Built by `qWhich`/`qSpell`/`qBeats` (data.js; no quotes or ！ inside, VOICEVOX would pause
+  before は), listed in texts.py, read with the word's kanji for pitch (`spoken()`). `ask(q, parts)` falls back to the
+  two-part version when a clip is missing (family phrases). The replay 🔊 says just the word.
+- **Fits the phone** (2026-10-09): lesson buttons sit in a docked bar (`.nav-row.dock`, sticky at the bottom of `#view`);
+  pictures/cards size by height too (`min(vw, vh)`); the grown-up note is a `<details>` "? For grown-ups"; match uses 4
+  columns on short screens. Checked: every lesson screen fits at 390×664 (iPhone in Safari), 430×750 and iPad.
 - **Rewards**: はなまる count, daily streak (にち), hanko stamp, stickers (topics, regions, kana milestones, はなまる, streaks).
 - **Mastery**: a word/phrase is learned after ≥3 correct with the last 2 in a row; answers after the hint don't count.
 - **State**: `localStorage` key `kidlingo.v1`: `{hana, days[], words{}, kana{}, themes{}, stickers{}, stars{},
