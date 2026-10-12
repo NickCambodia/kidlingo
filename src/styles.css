@@ -471,7 +471,7 @@ details.grown-up p{margin:8px 0 0;font-size:15px;line-height:1.6}
 .art .kb-d:nth-child(5){animation-delay:.2s} .art .kb-d:nth-child(6){animation-delay:.4s}
 @media (prefers-reduced-motion:reduce){ .art .kb-d{animation:none} }
 .learn-card:has(.art){min-height:0;padding:clamp(12px,2vh,22px);gap:clamp(8px,1.6vh,14px)}
-.learn-card .art.xl{width:min(100%,440px,max(160px,calc((100dvh - 450px) * 1.5)))}
+.learn-card .art.xl{width:min(100%,440px,max(150px,calc((100dvh - 500px) * 1.5)))}
 .talk-card .art.xl{width:min(100%,440px,34vh)}
 @media (max-height:720px){
   .ph{font-size:clamp(22px,6.2vw,32px)!important} .talk-card .ph{font-size:clamp(22px,6vw,30px)!important}
@@ -492,3 +492,37 @@ details.grown-up p{margin:8px 0 0;font-size:15px;line-height:1.6}
 @media (prefers-reduced-motion:reduce){ .totrain{animation:none} }
 .totrain .emo{font-size:30px;line-height:1}
 .totrain:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+
+/* ---------- 🎤 on every learn card (2026-10-13): record, hear yourself, then the model; a はなまる floats up ---------- */
+/* on learn cards 🎤 (and 👂 after a take) sit in the bottom bar between ◀ and ▶, always in reach */
+.dmic{display:flex;gap:10px;justify-content:center;align-items:center;flex:1}
+.dmic .btn.round{width:62px;flex:none}
+.fhana{position:fixed;z-index:30;pointer-events:none;color:var(--shu);transform:translate(-50%,-50%);animation:fhana 1.2s ease-out forwards}
+@keyframes fhana{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}25%{opacity:1;transform:translate(-50%,-90%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
+@media (prefers-reduced-motion:reduce){ .fhana{animation:none;opacity:1} }
+.learn-card .ph{font-size:clamp(22px,6.4vw,40px)!important}
+.prompt-text{word-break:keep-all;overflow-wrap:anywhere}
+@media (max-height:600px){ .choice{height:clamp(84px,min(32vw,17vh),200px)} .talk-card .art.xl{width:min(100%,440px,26vh)} }
+/* short screens: everything above the bottom bar, the 🎤 row and ? included */
+@media (max-height:720px){
+  .mean-row{margin-top:6px;min-height:0}
+  .qbtn{width:42px;height:42px;font-size:21px}
+}
+@media (max-height:600px){
+  .prompt-text{font-size:20px} .prompt{min-height:46px;gap:10px}
+  .learn-card{min-height:0;padding:12px;gap:6px}
+  .learn-card .emo.xl{font-size:clamp(64px,15vh,120px)}
+  .talk-card{padding:12px;gap:8px} .talk-card .ph{font-size:20px!important}
+  .rec-row .btn.round{width:54px;height:54px;min-height:0}
+}
+@media (max-height:720px){
+  .learn-card .swatch.xl{width:clamp(70px,min(30vw,16vh),170px)}
+  .learn-card .ph{font-size:clamp(20px,5.6vw,32px)!important}
+}
+@media (max-height:600px){
+  .say-opt{font-size:16px;min-height:46px} .scene .art.xl{width:min(100%,420px,26vh)}
+  .choice{height:clamp(76px,min(32vw,15vh),200px)} .read-word{font-size:clamp(30px,9vw,44px)} p.sub{margin:2px 0 6px}
+  .talk-card .swatch.xl{width:clamp(60px,14vh,120px)}
+}
+/* learn cards: the grown-ups' ? sits at the end of the instruction line; the meaning opens under the card */
+.prompt .qbtn{margin-left:auto}

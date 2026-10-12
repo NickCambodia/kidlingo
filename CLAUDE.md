@@ -46,6 +46,11 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
 - **Phrase lesson**: learn cards → 4× なんていう？ → 3× listen → 2× read (picture answers in a 2×2 grid; family phrases,
   which have no picture, in one wide column) → shadowing with
   **hear yourself**: 🎤 records up to 6 s (`bindRecorder`, https only), 👂 replays it; a grown-up taps いえた！.
+- **🎤 on every learn card** (2026-10-13, Nick): words, phrases and sound lessons, plus the word lessons' last step.
+  Learn cards: 🎤 (and 👂 after a take) sit in the bottom bar between ◀ and ▶ (replacing the 1 / 8 count; the count
+  returns where recording can't work); the grown-ups' ? moved to the end of the instruction line. A take (4 s words,
+  6 s phrases, or tap again) plays back the child's voice, then the model (`bindRecorder(mic, me, recFor(w, mic))`).
+  The first real take (≥ 0.8 s) of each word in a lesson earns 1 はなまる (`L.recd`, `floatHana`). Takes stay in memory.
 - **Home** (2026-10-09): the four play buttons (ことば おはなし かく シール) stay pinned at the top while the journey
   scrolls (the journey scrolls inside `<main>`, so iPhone's tap-the-clock-to-top doesn't work); a round 🚃 button
   (`#toTrain`) appears above つぎ when the train's stop is out of sight and glides back to it.

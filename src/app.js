@@ -368,7 +368,7 @@ function lesson(id){
     steps.push({type:'match'}, {type:'talk'});
   }
   view.style.setProperty('--tc', `var(${t.hue})`);
-  L = {t, steps, i:0, earned:0, ok:0, n:0, from:prevScreen === 'lesson' && L ? L.from : prevScreen, was:stopDone(id)};
+  L = {t, steps, i:0, earned:0, ok:0, n:0, recd:new Set(), from:prevScreen === 'lesson' && L ? L.from : prevScreen, was:stopDone(id)};
   markDay(); step();
 }
 const stepsBar = () => { const pct = Math.round(L.i / L.steps.length * 100);
@@ -439,16 +439,17 @@ function stSay(s){
 function stLearn(){
   const W = L.t.words; let j = 0;
   const draw = (intro) => { const w = W[j];
-    h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">さわって きいて ください</span></div>
+    h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">さわって きいて ください</span><button class="qbtn" id="qm" aria-label="Show meaning" aria-expanded="false">?</button></div>
       <button class="learn-card" id="lc" aria-label="${w.k}">${pic(w,'xl')}${isS() ? beatRow(w.k) : S.settings.kana || isP() ? `<span class="kana word${isP()?' ph':''}">${w.k}</span>` : ''}</button>
-      <div class="mean-row"><button class="qbtn" id="qm" aria-label="Show meaning" aria-expanded="false">?</button><span class="meaning" id="mean" hidden>${meaning(w)}</span></div>
-      <div class="nav-row dock"><button class="btn" id="pv" aria-label="まえ" ${j===0?'disabled':''}>◀</button><span class="count">${j+1} / ${W.length}</span><button class="btn primary" id="nx" aria-label="つぎ">${j===W.length-1?'つぎへ ▶':'▶'}</button></div>`);
+      <div class="mean-row" id="mean" hidden><span class="meaning">${meaning(w)}</span></div>
+      <div class="nav-row dock"><button class="btn" id="pv" aria-label="まえ" ${j===0?'disabled':''}>◀</button>${canRecord() ? `<span class="dmic">${micBtns()}</span>` : `<span class="count">${j+1} / ${W.length}</span>`}<button class="btn primary" id="nx" aria-label="つぎ">${j===W.length-1?'つぎへ ▶':'▶'}</button></div>`);
     say(intro ? [isS() ? 'てを たたいて かぞえましょう' : 'さわって きいて ください', w.k] : w.k);
     $('#lc').onclick = () => { say(w.k); bump($('#lc')); };
     $('#sp').onclick = () => say(w.k);
     $('#qm').onclick = () => { const m = $('#mean'); m.hidden = !m.hidden; $('#qm').setAttribute('aria-expanded', String(!m.hidden)); sfx.tap(); };
-    $('#pv').onclick = () => { if(j > 0){ j--; draw(); } };
-    $('#nx').onclick = () => { if(j < W.length-1){ j++; draw(); } else next(); };
+    if(canRecord()) bindRecorder($('#mic'), $('#me'), recFor(w, $('#mic')));
+    $('#pv').onclick = () => { stopRecorder(); if(j > 0){ j--; draw(); } };
+    $('#nx').onclick = () => { stopRecorder(); if(j < W.length-1){ j++; draw(); } else next(); };
   };
   draw(true);
 }
@@ -506,13 +507,13 @@ function stTalk(){
     const drawP = () => { if(j >= ws.length) return next(); const w = ws[j];
       h(`${stepsBar()}<div class="prompt"><span class="prompt-text">まねして いって みましょう！</span></div>
         <div class="talk-card">${pic(w,'xl')}<span class="kana word ph">${w.k}</span>
-          <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button>${canRecord() ? `<button class="btn round mic" id="mic" aria-label="ろくおん">${MIC}</button><button class="btn round me" id="me" aria-label="じぶんの こえ" hidden>${EAR}</button>` : ''}</div>
+          <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button>${micBtns()}</div>
           <details class="grown-up"><summary><span class="qbtn small" aria-hidden="true">?</span>For grown-ups</summary><p>Let them listen, then say it back together.${canRecord() ? ' The microphone records them so they can hear themselves.' : ''} Tap <b>いえました！</b> when they say it. <br>Meaning: <b>${meaning(w)}</b></p></details>
         </div>
         <div class="nav-row dock"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
       say(j === 0 ? ['まねして いって みましょう', w.k] : w.k);
       $('#hear').onclick = () => say(w.k);
-      if(canRecord()) bindRecorder($('#mic'), $('#me'));
+      if(canRecord()) bindRecorder($('#mic'), $('#me'), recFor(w, $('#mic')));
       $('#skip').onclick = () => { j++; drawP(); };
       $('#said').onclick = () => { stopRecorder(); sfx.ok(); rec(w.k, true); tally(true); addHana(1); j++; setTimeout(drawP, 450); };
       $('#skip').onclick = () => { stopRecorder(); j++; drawP(); };
@@ -522,13 +523,14 @@ function stTalk(){
   const draw = () => { if(j >= ws.length) return next(); const w = ws[j];
     h(`${stepsBar()}<div class="prompt"><span class="prompt-text">ママや パパと いって みましょう！</span></div>
       <div class="talk-card">${pic(w,'xl')}
-        <details class="grown-up"><summary><span class="qbtn small" aria-hidden="true">?</span>For grown-ups</summary><p>Point and ask <b class="kana">これは なんですか？</b> Tap <b>いえました！</b> when they say it in Japanese.<br>Answer: <b class="kana">${w.k}</b></p></details>
-        <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button></div>
+        <div class="rec-row"><button class="btn round" id="hear" aria-label="きく">${SPK}</button>${micBtns()}</div>
+        <details class="grown-up"><summary><span class="qbtn small" aria-hidden="true">?</span>For grown-ups</summary><p>Point and ask <b class="kana">これは なんですか？</b> Tap <b>いえました！</b> when they say it in Japanese.${canRecord() ? ' 🎤 records them; they hear themselves, then the app again.' : ''}<br>Answer: <b class="kana">${w.k}</b></p></details>
       </div>
       <div class="nav-row dock"><button class="btn" id="skip">つぎ ▶</button><button class="btn primary" id="said">いえました！</button></div>`);
     $('#hear').onclick = () => say(w.k);
-    $('#skip').onclick = () => { j++; draw(); };
-    $('#said').onclick = () => { sfx.ok(); rec(w.k, true); tally(true); addHana(1); j++; setTimeout(draw, 450); };
+    if(canRecord()) bindRecorder($('#mic'), $('#me'), recFor(w, $('#mic')));
+    $('#skip').onclick = () => { stopRecorder(); j++; draw(); };
+    $('#said').onclick = () => { stopRecorder(); sfx.ok(); rec(w.k, true); tally(true); addHana(1); j++; setTimeout(draw, 450); };
   };
   say('ママや パパと いって みましょう'); draw();
 }
@@ -742,24 +744,36 @@ const MIC = '<span class="emo">🎤</span>', EAR = '<span class="emo">👂</span
 let REC = null;
 const canRecord = () => !!(window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
 function stopRecorder(){ if(!REC) return; clearTimeout(REC.t); try{ if(REC.mr.state !== 'inactive') REC.mr.stop(); }catch(e){} }
-function bindRecorder(mic, me){ let url = null; const out = new Audio();
-  const play = () => { if(!url) return; try{ player.pause(); }catch(e){} out.src = url; out.play().catch(() => {}); bump(me); };
-  me.onclick = play;
+/* o.max: longest take (ms); o.model: said again right after the child's own voice, so they hear the difference;
+   o.onTake(ms): called after each take with its length. */
+function bindRecorder(mic, me, o = {}){ let url = null; const out = new Audio();
+  const play = then => { if(!url) return; try{ player.pause(); }catch(e){} out.onended = then ? () => { if(me.isConnected) setTimeout(then, GAP); } : null;
+    out.src = url; out.play().catch(() => {}); bump(me); };
+  me.onclick = () => play();
   mic.onclick = async () => {
     if(REC){ stopRecorder(); return; }
     try{ player.pause(); }catch(e){}
     let stream; try{ stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }catch(e){ sfx.no(); shake(mic); return; }
     if(!mic.isConnected){ stream.getTracks().forEach(t => t.stop()); return; }
-    const chunks = [], mr = new MediaRecorder(stream);
-    REC = {mr, t:setTimeout(stopRecorder, 6000)}; mic.classList.add('on');
+    const chunks = [], mr = new MediaRecorder(stream), t0 = performance.now();
+    REC = {mr, t:setTimeout(stopRecorder, o.max || 6000)}; mic.classList.add('on');
     mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
     mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); REC = null; mic.classList.remove('on');
       if(!mic.isConnected || !chunks.length) return;
       if(url) URL.revokeObjectURL(url); url = URL.createObjectURL(new Blob(chunks, {type:mr.mimeType || 'audio/mp4'}));
-      me.hidden = false; play(); };
+      me.hidden = false; play(o.model ? () => say(o.model) : null);
+      if(o.onTake) o.onTake(performance.now() - t0); };
     mr.start(); sfx.tap();
   };
 }
+/* A はなまる for the first real try (≥ 0.8 s) at each word in a lesson: rewards having a go, not tapping. */
+const recFor = (w, mic) => ({max:w.phrase ? 6000 : 4000, model:w.k, onTake:ms => {
+  if(!L || ms < 800 || L.recd.has(w.k)) return; L.recd.add(w.k); addHana(1); sfx.ok(); floatHana(mic); }});
+function floatHana(el){ if(!el || !el.isConnected) return; const r = el.getBoundingClientRect(), f = document.createElement('span');
+  f.className = 'fhana'; f.innerHTML = hanamaru(44); f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = r.top + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 1300); }
+/* 🎤 + 👂 buttons (none where recording can't work, e.g. the file opened from disk) */
+const micBtns = () => canRecord() ? `<button class="btn round mic" id="mic" aria-label="ろくおん">${MIC}</button><button class="btn round me" id="me" aria-label="じぶんの こえ" hidden>${EAR}</button>` : '';
 
 /* ---------- grown-ups ---------- */
 const famRow = (k, p, en, own) => `<div class="frow" data-k="${k}" data-own="${own ? 1 : ''}"><span class="emo">${p || '💬'}</span><span class="ftext"><span class="kana">${k}</span><small>${en || ''}</small></span>
