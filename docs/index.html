@@ -1821,6 +1821,7 @@ function stLearn(){
     $('#lc').onclick = () => { say(w.k); bump($('#lc')); };
     $('#sp').onclick = () => say(w.k);
     $('#qm').onclick = () => { const m = $('#mean'); m.hidden = !m.hidden; $('#qm').setAttribute('aria-expanded', String(!m.hidden)); sfx.tap(); };
+    $('#mean').onclick = () => $('#qm').click();   // tap the bubble to close it
     if(canRecord()) bindRecorder($('#mic'), $('#me'), recFor(w, $('#mic')));
     $('#pv').onclick = () => { stopRecorder(); if(j > 0){ j--; draw(); } };
     $('#nx').onclick = () => { stopRecorder(); if(j < W.length-1){ j++; draw(); } else next(); };
