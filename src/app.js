@@ -469,9 +469,9 @@ function stSay(s){
 function stLearn(){
   const W = L.t.words; let j = 0;
   const draw = (intro) => { const w = W[j];
-    h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text">さわって きいて ください</span><button class="qbtn" id="qm" aria-label="Show meaning" aria-expanded="false">?</button></div>
-      <div class="mean-row" id="mean" hidden><span class="meaning">${meaning(w)}</span></div>
+    h(`${stepsBar()}<div class="prompt">${spk('sp')}<span class="prompt-text one">さわって きいて ください</span><button class="qbtn" id="qm" aria-label="Show meaning" aria-expanded="false">?</button></div>
       <button class="learn-card" id="lc" aria-label="${w.k}">${pic(w,'xl')}${isS() ? beatRow(w.k) : S.settings.kana || isP() ? `<span class="kana word${isP()?' ph':''}">${w.k}</span>` : ''}</button>
+      <div class="mean-row" id="mean" hidden><span class="meaning">${meaning(w)}</span></div>
       <div class="nav-row dock"><button class="btn" id="pv" aria-label="まえ" ${j===0?'disabled':''}>◀</button>${canRecord() ? `<span class="dmic">${micBtns()}</span>` : `<span class="count">${j+1} / ${W.length}</span>`}<button class="btn primary" id="nx" aria-label="つぎ">${j===W.length-1?'つぎへ ▶':'▶'}</button></div>`);
     say(intro ? [isS() ? 'てを たたいて かぞえましょう' : 'さわって きいて ください', w.k] : w.k);
     $('#lc').onclick = () => { say(w.k); bump($('#lc')); };
