@@ -8,7 +8,13 @@ const THEMES = [
   {id:'vehicles', name:'のりもの', icon:'🚃', hue:'--sky', words:[['くるま','🚗'],['でんしゃ','🚃'],['ひこうき','✈️'],['ふね','🚢'],['じてんしゃ','🚲'],['しょうぼうしゃ','🚒']]},
   {id:'oyatsu', kata:true, name:'おやつ', icon:'🍰', hue:'--sun', words:[['パン','🍞'],['バナナ','🍌'],['ケーキ','🍰'],['アイス','🍦'],['ジュース','🧃'],['クッキー','🍪'],['チョコ','🍫'],['ピザ','🍕']]},
   {id:'zoo', kata:true, name:'どうぶつえん', icon:'🦁', hue:'--leaf', words:[['ライオン','🦁'],['パンダ','🐼'],['ペンギン','🐧'],['コアラ','🐨'],['キリン','🦒'],['ゴリラ','🦍'],['カンガルー','🦘'],['ワニ','🐊']]},
-  {id:'mono', kata:true, name:'おうちの もの', icon:'📺', hue:'--sky', words:[['テレビ','📺'],['ボール','⚽'],['ゲーム','🎮'],['カメラ','📷'],['ロボット','🤖'],['スプーン','🥄'],['バス','🚌'],['タクシー','🚕']]}
+  {id:'mono', kata:true, name:'おうちの もの', icon:'📺', hue:'--sky', words:[['テレビ','📺'],['ボール','⚽'],['ゲーム','🎮'],['カメラ','📷'],['ロボット','🤖'],['スプーン','🥄'],['バス','🚌'],['タクシー','🚕']]},
+  /* 2026-10-13: everyday words for home (Nick: "more everyday words"). Actions are drawn (art.js 'a:…'); the days use
+     the picture inside each day's kanji (月 moon, 火 fire, 水 water, 木 tree, 金 gold, 土 earth, 日 sun). */
+  {id:'kazoku', name:'かぞく', icon:'👪', hue:'--shu', words:[['おかあさん','👩'],['おとうさん','👨'],['おにいさん','👦'],['おねえさん','👧'],['おばあさん','👵'],['おじいさん','👴'],['あかちゃん','👶']]},
+  {id:'tenki', name:'てんき', icon:'🌤️', hue:'--sky', words:[['はれ','☀️'],['あめ','☔'],['くもり','☁️'],['ゆき','❄️'],['かぜ','🌬️'],['かみなり','⚡'],['にじ','🌈']]},
+  {id:'ugoki', name:'うごき', icon:'🏃', hue:'--leaf', words:[['たべる',{a:'taberu'}],['のむ',{a:'nomu'}],['ねる',{a:'neru'}],['あるく',{a:'aruku'}],['はしる',{a:'hashiru'}],['およぐ',{a:'oyogu'}],['うたう',{a:'utau'}],['かく',{a:'kaku'}]]},
+  {id:'youbi', name:'ようび', icon:'📅', hue:'--plum', words:[['げつようび','🌙'],['かようび','🔥'],['すいようび','💧'],['もくようび','🌳'],['きんようび','🪙'],['どようび','⛰️'],['にちようび','☀️']]}
 ];
 const PHRASES = [
   {id:'aisatsu', kind:'phrase', name:'あいさつ', icon:'👋', hue:'--sun', words:[['おはよう ございます','🌅🙂','Good morning'],['こんにちは','☀️👋','Hello'],['こんばんは','🌆👋','Good evening'],['おやすみなさい','🌙😴','Good night'],['さようなら','👋🎒','Goodbye'],['はじめまして','🙂🤝🙂','Nice to meet you'],['おげんきですか？','🙂❓','How are you?'],['げんきです！','😄💪','I’m fine!']]},
@@ -29,7 +35,11 @@ const EN = {
   vehicles:['car','train','airplane','ship','bicycle','fire engine'],
   oyatsu:['bread','banana','cake','ice cream','juice','cookie','chocolate','pizza'],
   zoo:['lion','panda','penguin','koala','giraffe','gorilla','kangaroo','crocodile'],
-  mono:['TV','ball','game','camera','robot','spoon','bus','taxi']
+  mono:['TV','ball','game','camera','robot','spoon','bus','taxi'],
+  kazoku:['mother','father','big brother','big sister','grandmother','grandfather','baby'],
+  tenki:['sunny','rain','cloudy','snow','wind','thunder','rainbow'],
+  ugoki:['eat','drink','sleep','walk','run','swim','sing','draw / write'],
+  youbi:['Monday (月 moon)','Tuesday (火 fire)','Wednesday (水 water)','Thursday (木 tree)','Friday (金 gold)','Saturday (土 earth)','Sunday (日 sun)']
 };
 THEMES.forEach(t => { t.kind = 'word'; t.words = t.words.map(([k,p],i) => ({k, p, en:EN[t.id][i], t:t.id})); });
 
@@ -78,7 +88,16 @@ const SOUNDS = [
 SOUNDS.forEach(t => t.words = t.words.map(([k,p,en,alt]) => ({k, p, en, alt, t:t.id})));
 /* beats (拍) in a word: every kana counts, including ー, っ and ん; small ゃゅょ etc. join the kana before them */
 const beats = w => [...w.replace(/[\s、。！？]/g, '')].reduce((a, c) => { if(/[ぁぃぅぇぉゃゅょゎァィゥェォャュョヮ]/.test(c) && a.length) a[a.length-1] += c; else a.push(c); return a; }, []);
-const ALL = [...THEMES, ...PHRASES, ...SOUNDS];
+/* Picture stories (2026-10-13): 4 pages each, made from the phrase pictures. The coach reads the page, the voice says
+   the line, the child says it too (🎤). Page = [phrase number (art.js / PHRASES order), narration]. */
+const STORIES = [
+  {id:'st_asa', kind:'story', name:'ソラの あさ', icon:'🌅', hue:'--sun', pages:[[1,'あさです。 ソラが おきました。'],[11,'あさごはんです。 おにぎりを たべます。'],[12,'ソラは がっこうに いきます。'],[13,'ママが てを ふります。']]},
+  {id:'st_koen', kind:'story', name:'こうえんで', icon:'🛝', hue:'--leaf', pages:[[2,'こうえんに いきました。 メイちゃんが きました。'],[56,'ボールが あります。'],[33,'あっ！ ソラが ころびました。'],[14,'いえに かえりました。']]},
+  {id:'st_yoru', kind:'story', name:'ソラの よる', icon:'🌙', hue:'--plum', pages:[[29,'ゆうがたです。 ママが ごはんを つくって います。'],[9,'ばんごはんの じかんです。'],[28,'よるに なりました。 ソラは ねむいです。'],[4,'ソラは ベッドに はいりました。']]}
+];
+STORIES.forEach(t => { const ps = PHRASES.flatMap(x => x.words);
+  t.words = t.pages.map(([n, nar]) => ({...ps.find(w => w.n === n), nar, t:t.id})); });
+const ALL = [...THEMES, ...PHRASES, ...SOUNDS, ...STORIES];
 const ALLW = THEMES.flatMap(t => t.words);
 const ALLP = PHRASES.flatMap(t => t.words);
 
@@ -91,6 +110,10 @@ const TALK = {
   oyatsu:[['おやつは なにに しますか？','What snack do you want?'],['パンと ケーキ、どちらに しますか？','Bread or cake, which one?'],['ジュースを のみますか？','Do you want some juice?']],
   zoo:[['ライオンは なんと なきますか？','What does a lion say? (ガオー)'],['パンダは なにいろですか？','What color is a panda?'],['どうぶつえんに いきましょう','Let’s go to the zoo.']],
   mono:[['テレビを けして ください','Turn off the TV, please.'],['ボールを とって ください','Get the ball, please.'],['スプーンは どこですか？','Where is the spoon?']],
+  kazoku:[['かぞくは なんにん ですか？','How many people are in your family?'],['おばあさんに でんわ しましょう','Let’s call Grandma.'],['あかちゃんは かわいいですね','The baby is cute, isn’t it?']],
+  tenki:[['きょうは どんな てんきですか？','What’s the weather like today?'],['あめが ふって います','It’s raining.'],['かさを もって いきましょう','Let’s take an umbrella.']],
+  ugoki:[['なにを して いますか？','What are you doing?'],['いっしょに はしりましょう','Let’s run together.'],['うたを うたいましょう','Let’s sing a song.']],
+  youbi:[['きょうは なんようびですか？','What day is it today?'],['あしたは なんようびですか？','What day is tomorrow?'],['にちようびに こうえんに いきましょう','Let’s go to the park on Sunday.']],
   vehicles:[['なにに のりたいですか？','What do you want to ride?'],['あれは なんですか？','What’s that? (point at one outside)'],['でんしゃを みましたね','We saw a train, didn’t we?']]
 };
 
@@ -116,12 +139,16 @@ const JOURNEY = [
   {name:'おおさか',     icon:'🏯', bg:'#FBF0D2', deco:['🐙','🎡','🍢'], stops:['h7','shitsumon','h8','h9']},
   {name:'ひろしま',     icon:'🍁', bg:'#FADFD8', deco:['🍁','⛵','🍁','🦌'], stops:['k0','oyatsu','nobasu','k1','k2','zoo']},
   {name:'ふくおか',     icon:'🍜', bg:'#ECE3F6', deco:['🏮','🍓','🌊','🐟'], stops:['k3','k4','chiisaitsu','mono','k5','k6']},
-  {name:'おきなわ',     icon:'🏝️', bg:'#D6F1F2', deco:['🐠','🌺','🐢','🐬'], stops:['k7','suki','k8','k9']}
+  {name:'おきなわ',     icon:'🏝️', bg:'#D6F1F2', deco:['🐠','🌺','🐢','🐬'], stops:['k7','suki','k8','k9']},
+  /* added 2026-10-13 after the old goal, so no child's train jumps back: new words and the picture stories */
+  {name:'しこく',       icon:'🍊', bg:'#FFF0D2', deco:['🍊','🌀','🐟','🍊'], stops:['kazoku','st_asa','tenki','st_koen']},
+  {name:'せんだい',     icon:'🌾', bg:'#E6F2DC', deco:['🌾','🎋','🐂','🌾'], stops:['ugoki','youbi','st_yoru']}
 ];
 const rowChars = id => { const rows = id[0] === 'h' ? KANA_ROWS : KATA_ROWS, r = +id.slice(1);
   return [...(r < 9 ? rows[r] : rows[9] + rows[10])].filter(c => c !== '・'); };
 JOURNEY.forEach(g => SPOKEN_EXTRA.push(g.name + 'に つきました！'));
-SPOKEN_EXTRA.push('ゴール！ おめでとう ございます！', 'しゅっぱつ！');
+SPOKEN_EXTRA.push('ゴール！ おめでとう ございます！', 'しゅっぱつ！', 'ふくしゅう しましょう！', 'じぶんで いって みましょう');
+STORIES.forEach(t => t.words.forEach(w => SPOKEN_EXTRA.push(w.nar)));
 SPOKEN_EXTRA.push('ただしい ほうは どれですか？', 'いくつ たたきますか？', 'てを たたいて かぞえましょう', 'かきじゅんを みましょう', 'じゅんばんが ちがいます', 'むきが ちがいます', 'もう いちど かきましょう', 'いいですね！');
 
 /* Example words under each kana on the tracing screen (2-3, the kana highlighted, tap to hear). を is used in

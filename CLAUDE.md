@@ -46,6 +46,25 @@ and stops the engine itself. Kokoro (`--engine kokoro`) remains as a fallback.
 - **Phrase lesson**: learn cards → 4× なんていう？ → 3× listen → 2× read (picture answers in a 2×2 grid; family phrases,
   which have no picture, in one wide column) → shadowing with
   **hear yourself**: 🎤 records up to 6 s (`bindRecorder`, https only), 👂 replays it; a grown-up taps いえた！.
+- **Daily review きょうの ふくしゅう** (2026-10-13): `reviewWords()` = up to 8 words/phrases/sound words the child has
+  met: weak ones first (missed, not right twice in a row), then ones not practised for 3+ days (`S.words[k].d` = day
+  of the last answer, `dayN()`). A 🔁 ふくしゅう pill floats above つぎ on home when ≥4 are due and today's review isn't
+  done (`S.reviewed`). Lesson id `review` (`reviewTopic()`): listen / read / spell steps, answers from each word's own
+  topic (`options`), coach intro ふくしゅう しましょう！ (`L.intro`, said before the first question by `ask`).
+- **New word topics** (2026-10-13): かぞく, てんき, うごき (actions, drawn: art.js `'a:taberu'`… via `{a:…}` pictures),
+  ようび (each day with the picture inside its kanji: 月🌙 火🔥 水💧 木🌳 金🪙 土⛰️ 日☀️).
+- **Picture stories** (2026-10-13, `STORIES`, kind `story`): ソラの あさ, こうえんで, ソラの よる; 4 pages each, made of
+  phrase pictures (`[phrase number, narration]`). Page: picture, coach reads the narration (`SPOKEN_EXTRA`), the voice
+  says the line, the child says it (🎤 in the bar; first page adds じぶんで いって みましょう). Finishing: +2 はなまる.
+  Listed in おはなし after the phrase topics; stop colour `.k-story`.
+- **Journey**: two regions added AFTER the old goal (しこく, せんだい: the new topics + stories), so nobody's train jumps
+  back. 46 stops. Never insert stops before existing ones.
+- **Sync between devices** (2026-10-13): parent mode → Turn on (makes a family code XXXX-XXXX-XXXX) / Join (type the
+  code on the other device). Supabase project `kidlingo-sync` (Nick's org, free plan), `scripts/sync.sql`: table
+  `kl_sync` closed to the public key, functions `kl_get` / `kl_put`. `SYNC = {url, key}` in app.js (empty = "not set
+  up yet"). Progress only (`syncPart`): days, words, kana, themes, stars, stickers, はなまる per device (`S.hanaDev`,
+  `DEV` = random id in localStorage `kidlingo.dev`), review day. `mergeInto` never loses progress (max / union).
+  Sync runs at start, 4 s after a save, and when the app goes to the background.
 - **🎤 on every learn card** (2026-10-13, Nick): words, phrases and sound lessons, plus the word lessons' last step.
   Learn cards: 🎤 (and 👂 after a take) sit in the bottom bar between ◀ and ▶ (replacing the 1 / 8 count; the count
   returns where recording can't work); the grown-ups' ? moved to the end of the instruction line. A take (4 s words,

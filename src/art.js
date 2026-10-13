@@ -102,8 +102,8 @@ function person(who, x, o = {}){
     legs = `<rect x="${x0}" y="${hip - 4}" width="78" height="26" rx="12" ${S(c.bot === 'dress' ? c.top : c.bot)}/>` +
       `<ellipse cx="${f * 64}" cy="${hip + 12}" rx="9" ry="13" ${S(c.shoe)}/>`;
   } else if(c.kid){
-    legs = [-1, 1].map(d => `<rect x="${d < 0 ? -18 : 5}" y="${hip + 8}" width="13" height="${-hip - 12}" ${S(SK)}/>` +
-      `<ellipse cx="${d * 12}" cy="-4" rx="13" ry="7" ${S(c.shoe)}/>`).join('');
+    legs = [-1, 1].map(d => `<g${o.stride ? ` transform="rotate(${d * o.stride} ${d * 11} ${hip + 10})"` : ''}><rect x="${d < 0 ? -18 : 5}" y="${hip + 8}" width="13" height="${-hip - 12}" ${S(SK)}/>` +
+      `<ellipse cx="${d * 12}" cy="-4" rx="13" ry="7" ${S(c.shoe)}/></g>`).join('');
     if(c.bot !== 'dress') legs += `<rect x="${-bw/2 + 3}" y="${hip - 8}" width="${bw - 6}" height="26" rx="7" ${S(c.bot)}/>`;
   } else {
     legs = [-1, 1].map(d => `<rect x="${d < 0 ? -25 : 3}" y="${hip - 8}" width="22" height="${-hip + 2}" rx="5" ${S(c.bot)}/>` +
@@ -234,6 +234,9 @@ const P = {
   balloon:`<path d="M0 0 Q-8 -40 4 -80" ${L(2)}/><ellipse cx="6" cy="-108" rx="24" ry="29" ${S('#E8443A')}/><ellipse cx="-2" cy="-116" rx="5" ry="8" fill="#fff" opacity=".6"/>`,
   plane:`<path d="M-30 -10 L20 -18 Q34 -18 30 -10 L-30 -2 Z" ${S('#4E9BE6')}/><path d="M-4 -12 L-14 -34 L-2 -34 L8 -14 Z" ${S('#F5C542')}/>`,
   puzzle:`<rect x="-26" y="-48" width="48" height="44" rx="4" ${S('#B07AD8')}/><rect x="-26" y="-48" width="24" height="22" fill="#F5C542" stroke="${LN}" stroke-width="2"/><rect x="-2" y="-26" width="24" height="22" fill="#5DB86A" stroke="${LN}" stroke-width="2"/>`,
+  glass:`<path d="M-10 -30 L10 -30 L8 -2 L-8 -2 Z" fill="#DFF2FC" stroke="${LN}" stroke-width="${SW}" stroke-linejoin="round"/><path d="M-9 -18 L9 -18 L8 -3 L-8 -3 Z" fill="#7CC3F2"/>`,
+  crayon:`<rect x="-4" y="-26" width="8" height="24" rx="2" transform="rotate(30)" ${S('#E8443A')}/>`,
+  toymic:`<rect x="-4" y="-6" width="8" height="26" rx="3" ${S('#3B3B48')}/><circle cx="0" cy="-12" r="10" ${S('#C9D1DA')}/>`,
   teddy:`<circle cx="-12" cy="-30" r="7" ${S('#C08A55')}/><circle cx="12" cy="-30" r="7" ${S('#C08A55')}/><ellipse cx="0" cy="2" rx="16" ry="18" ${S('#C08A55')}/><circle cx="0" cy="-20" r="15" ${S('#C08A55')}/><ellipse cx="0" cy="-16" rx="6" ry="4.5" fill="#F0D2AC"/><circle cx="-5" cy="-23" r="2" fill="${LN}"/><circle cx="5" cy="-23" r="2" fill="${LN}"/>`
 };
 function table(x1, x2, top, col = '#C98B52'){
@@ -371,6 +374,8 @@ const speed = (x, y, dir = -1) => [0, 1, 2].map(i => `<path d="M${x} ${y + i * 2
 const scrape = `<ellipse cx="0" cy="0" rx="7" ry="5" fill="#E8443A" opacity=".8"/>`;
 const sparkle = (x, y, s = 1) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -12 Q0 0 12 0 Q0 0 0 12 Q0 0 -12 0 Q0 0 0 -12 Z" fill="#F5C542" stroke="#E08A1E" stroke-width="1.4"/>`;
 const PJ = {top:'#A9D3F2', bot:'#A9D3F2', pj:1};
+const note = (x, y, s = 1, c = '#B07AD8') => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M6 0 L6 -30 L22 -36 L22 -8" ${L(3.4, c)}/><ellipse cx="1" cy="1" rx="7" ry="5.5" fill="${c}"/><ellipse cx="17" cy="-7" rx="7" ry="5.5" fill="${c}"/></g>`;
+const steps = (x, y, n) => Array.from({length:n}, (_, i) => `<ellipse cx="${x - i * 38}" cy="${y + (i % 2) * 10}" rx="9" ry="5" fill="#C9B08A" opacity="${.7 - i * .15}"/>`).join('');
 
 /* ---------- the scenes (numbers match art/PROMPTS.md) ---------- */
 const SC = {
@@ -538,6 +543,28 @@ const SC = {
     person('sora', 190, {f:1, x:'grin', l:[18, -62], r:[18, -62], y:300, say:1}) + person('papa', 470, {f:-1, x:'smile', l:'ok'})
 };
 /* Speech bubbles are drawn last, so nothing covers them. */
+/* the うごき (action) words: Sora alone, doing it */
+Object.assign(SC, {
+  'a:taberu': () => room('day', {win:[60, 40, 150, 110]}) + person('sora', 300, {f:1, x:'yum', r:[-8, 2], ir:`<g transform="translate(-8 8) scale(.62)">${P.onigiri}</g>`, l:'hold', y:GY - 14}) +
+    table(150, 450, 290) + plate(370, 288, 60) + `<g transform="translate(370 286) scale(.7)">${P.onigiri}</g>`,
+  'a:nomu': () => room('day', {win:[390, 40, 150, 110]}) + person('sora', 260, {f:1, x:'content', r:[-14, 2], ir:`<g transform="translate(-6 10) scale(.8)">${P.glass}</g>`, l:'hold'}),
+  'a:neru': () => room('night', {win:[380, 40, 150, 110], lamp:-200}) + bed(70, 262, 330) + head('sora', 150, 226, {f:1, x:'content'}) +
+    blanket(70, 268, 330) + `<g transform="translate(240 262) scale(.85)">${P.teddy}</g>`,
+  'a:aruku': () => outside('day', {sun:520}) + path(300, 300, 180, 60) + tree(70, .8) + steps(250, GY + 18, 4) +
+    person('sora', 320, {f:1, x:'smile', stride:12, l:[14, 44], r:[-6, 46], pack:1}),
+  'a:hashiru': () => outside('day', {sun:520}) + tree(560, .8) + speed(200, GY - 140, -1) +
+    person('sora', 300, {f:1, x:'grin', stride:30, lean:14, l:[30, 6], r:[10, -34]}) + `<ellipse cx="300" cy="${GY + 8}" rx="40" ry="7" fill="#000" opacity=".1"/>`,
+  'a:oyogu': () => outside('day', {sun:520}) + `<rect y="250" width="${W}" height="${H - 250}" fill="#7CC8F0"/>` +
+    person('sora', 300, {f:1, x:'grin', r:[30, -50], l:[40, 6], y:342}) +
+    `<path d="M0 262 Q37 250 75 262 T150 262 T225 262 T300 262 T375 262 T450 262 T525 262 T600 262 L600 ${H} L0 ${H} Z" fill="#4FAEE8"/>` +
+    [[220, 300], [400, 330], [120, 350], [480, 290]].map(([x, y]) => `<path d="M${x - 20} ${y} q10 -8 20 0 q10 8 20 0" ${L(3, '#FFFFFF')}/>`).join('') +
+    `<circle cx="352" cy="190" r="6" fill="#fff" opacity=".9"/><circle cx="366" cy="204" r="4" fill="#fff" opacity=".9"/>`,
+  'a:utau': () => room('day', {win:[60, 40, 150, 110]}) + person('sora', 300, {f:1, x:'grin', r:[-10, -6], ir:P.toymic, l:'up'}) +
+    note(400, 150) + note(440, 220, .8, '#4E9BE6') + note(200, 190, .7, '#F08E4E'),
+  'a:kaku': () => room('day', {win:[390, 40, 150, 110]}) + person('sora', 260, {f:1, x:'smile', r:[20, 44], l:'hold', y:GY - 14}) +
+    table(120, 480, 290) + `<path d="M282 290 L392 290 L380 270 L296 270 Z" ${S('#FFFFFF')}/><circle cx="362" cy="278" r="6" fill="#F5C542"/><path d="M318 286 L318 278 L328 272 L338 278 L338 286" ${L(2.4, '#E8443A')}/>` +
+    `<g transform="translate(304 286)">${P.crayon}</g><circle cx="304" cy="288" r="8.6" ${S(SK)}/>`
+});
 const scene = n => { if(!SC[n]) return ''; BUB = []; const body = SC[n]();
   return `<svg class="kart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${body}${BUB.join('')}</svg>`; };
 return {scene, has:n => !!SC[n], list:() => Object.keys(SC).map(Number)};

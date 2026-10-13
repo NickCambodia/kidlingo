@@ -5,12 +5,14 @@ const DEF_SET = {kana:true, rate:0.85, sfx:true, speed:1, family:true, hint:'en'
 const fresh = () => ({hana:0, days:[], words:{}, kana:{}, themes:{}, stickers:{}, stars:{}, settings:{...DEF_SET}});
 function load(){ try{ const r = JSON.parse(localStorage.getItem(KEY)); if(r){ const st = Object.assign({...DEF_SET}, r.settings||{}); if(st.slow){ st.speed = 0; delete st.slow; } return Object.assign(fresh(), r, {settings:st}); } }catch(e){} return fresh(); }
 let S = load();
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let syncSoon = () => {};   // set by the sync section below
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} syncSoon(); }
 
 const fmt = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 function markDay(){ const t = fmt(new Date()); if(!S.days.includes(t)){ S.days.push(t); save(); updateBar(); } }
 function streak(){ const set = new Set(S.days); const d = new Date(); if(!set.has(fmt(d))){ d.setDate(d.getDate()-1); if(!set.has(fmt(d))) return 0; } let n=0; while(set.has(fmt(d))){ n++; d.setDate(d.getDate()-1); } return n; }
-function rec(k, ok){ const w = S.words[k] || (S.words[k] = {ok:0, miss:0, streak:0}); if(ok){ w.ok++; w.streak++; } else { w.miss++; w.streak = 0; } save(); }
+const dayN = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5);   // today, as a day count
+function rec(k, ok){ const w = S.words[k] || (S.words[k] = {ok:0, miss:0, streak:0}); if(ok){ w.ok++; w.streak++; } else { w.miss++; w.streak = 0; } w.d = dayN(); save(); }
 const mastered = k => { const w = S.words[k]; return !!w && w.ok >= 3 && w.streak >= 2; };
 const doneIn = list => list.filter(k => S.kana[k]).length;
 const kanaDone = () => doneIn(KANA);
@@ -61,7 +63,7 @@ const clipKey = t => S.settings.speed === 0 && CLIPS['slow:' + t] ? 'slow:' + t 
 let lastSaid = null;
 const srcOf = t => (famOn() && FAM[t]) || CLIPS[clipKey(t)];
 /* a quiz question as one natural sentence (word first); the two-part version if that clip is missing (family phrases) */
-const ask = (q, parts) => say(srcOf(q) ? q : parts);
+const ask = (q, parts) => { const a = srcOf(q) ? [q] : parts, pre = L && L.intro; if(L) L.intro = null; say(pre ? [pre, ...a] : a.length === 1 ? a[0] : a); };
 function say(text, rate){
   const parts = [].concat(text), r = rate || S.settings.rate;
   lastSaid = parts[parts.length - 1];
@@ -174,9 +176,10 @@ function scene(sc, size){
   return `<span class="scn ${size}" aria-hidden="true">${sc.t ? `<span class="scn-t">${sc.t}</span>` : ''}${sc.s.map((e,i) =>
     `<span class="scn-s${/^(➡️|⬅️)$/.test(e) ? ' arr' : ''}${i === sc.sp ? ' sp' : ''}">${i === sc.sp ? '<span class="bub"><i></i><i></i><i></i></span>' : ''}${sc.sub && sc.sub.i === i ? `<span class="bub sub">${sc.sub.e}</span>` : ''}<span class="emo">${e}</span></span>`).join('')}</span>`; }
 /* Phrases have a drawn picture (src/art.js); family phrases keep their emoji. */
-const hasArt = w => !!(w.n && typeof KART !== 'undefined' && KART.has(w.n));
+const artKey = w => w.n || (w.p && w.p.a ? 'a:' + w.p.a : null);
+const hasArt = w => { const k = artKey(w); return !!(k && typeof KART !== 'undefined' && KART.has(k)); };
 function pic(w, size){ const p = w.p;
-  if(hasArt(w)) return `<span class="art ${size}" aria-hidden="true">${KART.scene(w.n)}</span>`;
+  if(hasArt(w)) return `<span class="art ${size}" aria-hidden="true">${KART.scene(artKey(w))}</span>`;
   if(w.sc) return scene(w.sc, size);
   if(typeof p === 'string') return `<span class="emo ${size}" aria-hidden="true">${p}</span>`;
   if(p.c) return `<span class="swatch ${size}" style="--sw:${p.c}" aria-hidden="true"></span>`;
@@ -220,7 +223,7 @@ function checkStickers(){
   toast(`<span class="emo">${got[0].e}</span><span>シールを もらいました！</span>`); sfx.win();
 }
 let L = null;
-function addHana(n){ S.hana += n; if(L) L.earned += n; markDay(); save(); updateBar(); checkStickers(); }
+function addHana(n){ S.hana += n; if(S.sync){ S.hanaDev = S.hanaDev || {}; S.hanaDev[DEV] = (S.hanaDev[DEV] || 0) + n; } if(L) L.earned += n; markDay(); save(); updateBar(); checkStickers(); }
 function updateBar(){ document.getElementById('hanaN').textContent = S.hana; document.getElementById('streakN').textContent = streak(); }
 
 /* ---------- helpers ---------- */
@@ -234,7 +237,19 @@ function pickTargets(words, n){
     .sort((a,b) => b.key - a.key).map(x => x.w);
   const out = []; if(!ranked.length) return out; while(out.length < n) out.push(...ranked.slice(0, n - out.length)); return out;
 }
-function options(w){ return shuffle([w, ...shuffle(L.t.words.filter(x => x.k !== w.k)).slice(0,3)]); }
+function options(w){ const pool = L.t.kind === 'review' ? topicOf(w.t).words : L.t.words;   // review: answers from the word's own topic
+  return shuffle([w, ...shuffle(pool.filter(x => x.k !== w.k)).slice(0,3)]); }
+
+/* きょうの ふくしゅう (daily review, 2026-10-13): up to 8 things the child has met, the weak ones first (missed, not yet
+   right twice in a row), then the ones not practised for 3+ days, oldest first. Offered on home once a day (🔁). */
+function reviewWords(){
+  const seen = new Set(), pool = [...ALLW, ...ALLP, ...SOUNDS.flatMap(t => t.words)].filter(w => S.words[w.k] && !seen.has(w.k) && seen.add(w.k));
+  const weak = pool.filter(w => S.words[w.k].miss > 0 && S.words[w.k].streak < 2).sort((a, b) => S.words[b.k].miss - S.words[a.k].miss).slice(0, 5);
+  const old = pool.filter(w => !weak.includes(w) && dayN() - (S.words[w.k].d || 0) >= 3).sort((a, b) => (S.words[a.k].d || 0) - (S.words[b.k].d || 0));
+  return [...weak, ...old].slice(0, 8);
+}
+const reviewDue = () => S.reviewed !== fmt(new Date()) && reviewWords().length >= 4;
+const reviewTopic = () => ({id:'review', kind:'review', name:'ふくしゅう', icon:'🔁', hue:'--shu', words:shuffle(reviewWords())});
 
 /* ---------- screens ---------- */
 let current = 'home', prevScreen = 'home';
@@ -261,7 +276,7 @@ function stopDone(id){ return isRow(id) ? rowChars(id).every(c => S.kana[c]) : (
 const nextStop = () => STOPS.findIndex(x => !stopDone(x.id));
 const stopName = id => isRow(id) ? rowChars(id).join('') : topicOf(id).name;
 const stopIcon = id => isRow(id) ? `<span class="kana">${rowChars(id)[0]}</span>` : `<span class="emo">${topicOf(id).icon}</span>`;
-const stopKind = id => isRow(id) ? 'write' : topicOf(id).kind === 'phrase' ? 'talk' : topicOf(id).kind === 'sound' ? 'sound' : 'words';
+const stopKind = id => isRow(id) ? 'write' : ({phrase:'talk', sound:'sound', story:'story'})[topicOf(id).kind] || 'words';
 function openStop(id){ sfx.tap(); if(isRow(id)) startRow(id); else go('lesson', id); }
 let ARRIVE = null;
 const XS = [50, 77, 50, 23];   // stops zig-zag across the board (percent of the width)
@@ -304,12 +319,13 @@ function home(){
       <div class="jgoal" style="top:${H - 64}px"><span class="emo">🎌</span><span>ゴール</span></div>
       <span class="train" id="train" style="left:${tx}%;top:${ty}px" aria-hidden="true">🚃</span>
     </div>
-    <div class="gobar"><button class="totrain" id="toTrain" aria-label="でんしゃに もどる" hidden><span class="emo">🚃</span></button><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
+    <div class="gobar">${reviewDue() ? `<button class="review-btn" id="review" aria-label="ふくしゅう"><span class="emo">🔁</span><span class="kana">ふくしゅう</span></button>` : ''}<button class="totrain" id="toTrain" aria-label="でんしゃに もどる" hidden><span class="emo">🚃</span></button><button class="btn primary go-next" id="goNext">${nxt ? `${stopIcon(nxt)}<span>つぎ</span>` : `<span class="emo">🎉</span><span>ゴール！</span>`}</button></div>`);
   bindGo();
   view.querySelectorAll('.stop').forEach(b => b.onclick = () => {
     if(b.classList.contains('lock')){ sfx.no(); shake(b); return; }
     openStop(b.dataset.stop); });
   $('#goNext').onclick = () => nxt ? openStop(nxt) : (sfx.tap(), go('stickers'));
+  if($('#review')) $('#review').onclick = () => { sfx.tap(); go('lesson', 'review'); };
   const centre = (i, smooth) => { const el = view.querySelector(`[data-stop="${STOPS[i].id}"]`); if(!el) return;
     const d = el.getBoundingClientRect().top - view.getBoundingClientRect().top - view.clientHeight * .42;
     view.scrollTo({top: view.scrollTop + d, behavior: smooth && !reduce ? 'smooth' : 'auto'}); };
@@ -340,7 +356,7 @@ function home(){
 }
 
 function themes(kind){
-  const list = kind === 'phrase' ? [...PHRASES, ...(famReady() ? [famTopic()] : [])] : [...THEMES, ...SOUNDS];
+  const list = kind === 'phrase' ? [...PHRASES, ...STORIES, ...(famReady() ? [famTopic()] : [])] : [...THEMES, ...SOUNDS];
   h(`<h1 class="screen-title">${kind === 'phrase' ? 'おはなし' : 'ことば'}</h1><div class="theme-grid">${list.map(t => `
     <button class="theme-card" data-go="lesson" data-arg="${t.id}" aria-label="${t.name}" style="--tc:var(${t.hue})">
       <span class="emo m">${t.icon}</span><span class="theme-name">${t.name}</span>${t.kata ? '<span class="kata-badge kana">カタカナ</span>' : ''}
@@ -351,10 +367,12 @@ function themes(kind){
 }
 
 function lesson(id){
-  const t = id === 'family' ? famTopic() : ALL.find(x => x.id === id);
-  if(!t || t.words.length < (t.kind === 'phrase' ? 4 : 2)){ go(prevScreen === 'lesson' ? 'home' : prevScreen || 'home'); return; }
-  const steps = [{type:'learn'}];
-  if(t.kind === 'phrase'){
+  const t = id === 'family' ? famTopic() : id === 'review' ? reviewTopic() : ALL.find(x => x.id === id);
+  if(!t || t.words.length < (t.kind === 'phrase' || t.kind === 'review' ? 4 : 2)){ go(prevScreen === 'lesson' ? 'home' : prevScreen || 'home'); return; }
+  const steps = t.kind === 'review' || t.kind === 'story' ? [] : [{type:'learn'}];
+  if(t.kind === 'review') t.words.forEach((w, i) => { const k = topicOf(w.t).kind; steps.push({type:k === 'sound' ? 'spell' : k === 'phrase' || !(i % 2) ? 'listen' : 'read', w}); });
+  else if(t.kind === 'story') t.words.forEach(w => steps.push({type:'story', w}));
+  else if(t.kind === 'phrase'){
     pickTargets(t.words, 4).forEach(w => steps.push({type:'say', w}));
     pickTargets(t.words, 3).forEach(w => steps.push({type:'listen', w}));
     pickTargets(t.words, 2).forEach(w => steps.push({type:'read', w}));
@@ -368,7 +386,7 @@ function lesson(id){
     steps.push({type:'match'}, {type:'talk'});
   }
   view.style.setProperty('--tc', `var(${t.hue})`);
-  L = {t, steps, i:0, earned:0, ok:0, n:0, recd:new Set(), from:prevScreen === 'lesson' && L ? L.from : prevScreen, was:stopDone(id)};
+  L = {t, steps, i:0, earned:0, ok:0, n:0, recd:new Set(), intro:t.kind === 'review' ? 'ふくしゅう しましょう！' : null, from:prevScreen === 'lesson' && L ? L.from : prevScreen, was:stopDone(id)};
   markDay(); step();
 }
 const stepsBar = () => { const pct = Math.round(L.i / L.steps.length * 100);
@@ -377,7 +395,19 @@ const speedBar = () => `<div class="speedbar"><span class="emo" aria-hidden="tru
 const tally = ok => { if(!L) return; L.n++; if(ok) L.ok++; };
 const starsFor = (ok, n) => !n ? 3 : ok/n >= .85 ? 3 : ok/n >= .5 ? 2 : 1;
 function next(){ if(current !== 'lesson') return; L.i++; if(L.i >= L.steps.length) finish(); else step(); }
-function step(){ const s = L.steps[L.i]; ({learn:stLearn, listen:stListen, read:stRead, match:stMatch, talk:stTalk, say:stSay, spell:stSpell, beats:stBeats})[s.type](s); }
+function step(){ const s = L.steps[L.i]; ({learn:stLearn, listen:stListen, read:stRead, match:stMatch, talk:stTalk, say:stSay, spell:stSpell, beats:stBeats, story:stStory})[s.type](s); }
+/* picture story page: the coach reads the page, the voice says the line, then the child says it too (🎤) */
+function stStory(s){ const w = s.w, last = L.i === L.steps.length - 1;
+  h(`${stepsBar()}<div class="story-page"><button class="story-pic" id="spic" aria-label="${w.k}">${pic(w,'xl')}</button><p class="nar kana">${w.nar}</p>
+      <div class="sline">${spk('sp','small')}<span class="kana word ph">${w.k}</span></div></div>
+    <div class="nav-row dock"><button class="btn" id="pv" aria-label="まえ" ${L.i === 0 ? 'disabled' : ''}>◀</button>${canRecord() ? `<span class="dmic">${micBtns()}</span>` : `<span class="count">${L.i+1} / ${L.steps.length}</span>`}<button class="btn primary" id="nx" aria-label="つぎ">${last ? 'つぎへ ▶' : '▶'}</button></div>`);
+  say(L.i === 0 && canRecord() ? [w.nar, w.k, 'じぶんで いって みましょう'] : [w.nar, w.k]);
+  $('#sp').onclick = () => say(w.k);
+  $('#spic').onclick = () => { say([w.nar, w.k]); bump($('#spic')); };
+  if(canRecord()) bindRecorder($('#mic'), $('#me'), recFor(w, $('#mic')));
+  $('#pv').onclick = () => { stopRecorder(); if(L.i > 0){ L.i--; step(); } };
+  $('#nx').onclick = () => { stopRecorder(); next(); };
+}
 const isS = () => L.t.kind === 'sound';
 /* ー, っ/ッ and long vowels (おかあさん, ひこうき) shown in red: the sounds that take a full beat */
 const VOW = c => { const h = c.replace(/[ァ-ヶ]/g, x => String.fromCharCode(x.charCodeAt(0) - 0x60)), r = {ゃ:'a', ゅ:'u', ょ:'o'}[h] || RO[h] || RO[h.slice(-1)]; return r ? r.slice(-1) : ''; };
@@ -536,7 +566,10 @@ function stTalk(){
 }
 
 function finish(){
-  const t = L.t; S.themes[t.id] = (S.themes[t.id]||0) + 1;
+  const t = L.t;
+  if(t.kind === 'review') S.reviewed = fmt(new Date());
+  else S.themes[t.id] = (S.themes[t.id]||0) + 1;
+  if(t.kind === 'story') addHana(2);
   finishScreen(t.id, starsFor(L.ok, L.n), L.earned, L.was, () => { prevScreen = 'lesson'; lesson(t.id); });
 }
 /* The end of any journey stop (a topic lesson or a kana row): hanko, 1-3 はなまる, then back to the map, where the
@@ -840,7 +873,7 @@ function parent(){
   const weak = [...ALLW, ...ALLP].filter(w => { const s = S.words[w.k]; return s && s.miss > 0 && s.streak < 2; }).sort((a,b) => S.words[b.k].miss - S.words[a.k].miss).slice(0,14);
   h(`<div class="parent">
     <h1>Grown-ups</h1>
-    <p class="lede">Progress is saved in this browser on this device only.</p>
+    <p class="lede">${S.sync ? 'Progress is synced between your devices.' : 'Progress is saved in this browser on this device only.'}</p>
     <div class="stats">
       <div class="stat"><b>${S.hana}</b><span>Hanamaru</span></div>
       <div class="stat"><b>${streak()}</b><span>Day streak</span></div>
@@ -889,6 +922,8 @@ function parent(){
     <div class="set"><span>Voice speed (slow is a real slow recording, for learning pronunciation; your child has the same bar in every lesson)</span>${speedBar()}</div>
     <div class="set"><label for="setSfx">Sound effects</label><input type="checkbox" id="setSfx" ${S.settings.sfx?'checked':''}></div>
     <div class="set"><span>Voice: recorded Japanese audio, __VOICE_CREDIT__. Anything without a recording uses the device voice.</span><button class="small-btn" id="testV">Test voice</button></div>
+    <div class="set sync"><span id="syncRow">${syncText()}</span>${!syncReady() ? '' : S.sync ? '<button class="small-btn" id="syncOff">Turn off</button>' :
+      '<span class="bk"><button class="small-btn" id="syncOn">Turn on</button><input id="syncCode" placeholder="or type a code" autocomplete="off" autocapitalize="characters" maxlength="16"><button class="small-btn" id="syncJoin">Join</button></span>'}</div>
     <div class="set"><span>Progress file: move progress to another device, or keep a copy</span><span class="bk"><button class="small-btn" id="bkSave">Save</button><label class="small-btn">Load<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></span></div>
     <div class="set"><span id="offRow">${offlineText()}</span></div>
     <div class="set"><span>Stroke order: KanjiVG (kanjivg.tagaini.net), © Ulrich Apel, CC BY-SA 3.0.</span></div>
@@ -898,7 +933,7 @@ function parent(){
   $('#setKana').onchange = e => { S.settings.kana = e.target.checked; save(); };
   const sh = $('#setHint'); sh.value = S.settings.hint || 'en'; sh.onchange = () => { S.settings.hint = sh.value; save(); };
   $('#setFam').onchange = e => { S.settings.family = e.target.checked; save(); };
-  bindFamily(); prepBackupVoices();
+  bindFamily(); prepBackupVoices(); bindSync();
   $('#setSfx').onchange = e => { S.settings.sfx = e.target.checked; save(); sfx.ok(); };
   $('#testV').onclick = () => say('こんにちは！ いっしょに にほんごを べんきょう しましょう。');
   /* backup: progress is per device, so a file moves it (share sheet on iPhone/iPad, a download elsewhere) */
@@ -919,6 +954,81 @@ function parent(){
     if(!armed){ armed = true; b.textContent = 'Tap again to erase everything'; setTimeout(() => { armed = false; if(b.isConnected) b.textContent = 'Reset'; }, 4000); return; }
     const keep = S.settings; S = fresh(); S.settings = keep; save(); go('parent'); toast('<span>Progress reset</span>'); };
 }
+
+/* ---------- sync between devices (2026-10-13, Nick: "progress that syncs between iPhone and iPad") ----------
+   A grown-up turns it on in parent mode and gets a family code (XXXX-XXXX-XXXX); typing it on the other device joins.
+   Only progress travels (days, words, kana, topics, stars, stickers, はなまる, review day): never recordings, family
+   phrases or settings. Supabase project kidlingo-sync: table kl_sync behind two functions, kl_get(code) / kl_put(code,
+   data); the table itself is closed to the public key. Merging never loses progress: the larger count wins per word or
+   topic, lists are joined, and はなまる are counted per device (S.hanaDev) so nothing is counted twice. */
+const SYNC = {url:'', key:''};   // filled in once the Supabase project exists; empty = the section shows "not set up"
+const DEV = (() => { try{ let d = localStorage.getItem('kidlingo.dev'); if(!d){ d = Math.random().toString(36).slice(2, 10); localStorage.setItem('kidlingo.dev', d); } return d; }catch(e){ return 'dev'; } })();
+const syncReady = () => !!(SYNC.url && SYNC.key);
+const CODE_ABC = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const newCode = () => { const r = crypto.getRandomValues(new Uint8Array(12)); return [0, 4, 8].map(i => [...r.slice(i, i + 4)].map(b => CODE_ABC[b % 31]).join('')).join('-'); };
+const cleanCode = c => (c || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/^(.{4})(.{4})(.{4})$/, '$1-$2-$3');
+const sumHana = m => Object.values(m || {}).reduce((a, b) => a + (+b || 0), 0);
+const syncPart = st => ({days:st.days, words:st.words, kana:st.kana, themes:st.themes, stickers:st.stickers, stars:st.stars, hanaDev:st.hanaDev || {}, reviewed:st.reviewed || ''});
+function mergeInto(st, r){
+  if(!r) return;
+  st.days = [...new Set([...(st.days || []), ...(r.days || [])])].sort();
+  for(const [k, w] of Object.entries(r.words || {})){ const m = st.words[k];
+    if(!m || (w.ok + w.miss) > (m.ok + m.miss) || ((w.ok + w.miss) === (m.ok + m.miss) && (w.d || 0) > (m.d || 0))) st.words[k] = w; }
+  for(const [k, v] of Object.entries(r.kana || {})) if(v) st.kana[k] = st.kana[k] || v;
+  for(const [k, v] of Object.entries(r.themes || {})) st.themes[k] = Math.max(st.themes[k] || 0, v || 0);
+  for(const [k, v] of Object.entries(r.stars || {})) st.stars[k] = Math.max(st.stars[k] || 0, v || 0);
+  for(const [k, v] of Object.entries(r.stickers || {})) st.stickers[k] = st.stickers[k] && st.stickers[k] < v ? st.stickers[k] : v;
+  st.hanaDev = st.hanaDev || {};
+  for(const [k, v] of Object.entries(r.hanaDev || {})) st.hanaDev[k] = Math.max(st.hanaDev[k] || 0, v || 0);
+  st.hana = sumHana(st.hanaDev);
+  if((r.reviewed || '') > (st.reviewed || '')) st.reviewed = r.reviewed;
+}
+async function rpc(fn, body){
+  const r = await fetch(`${SYNC.url}/rest/v1/rpc/${fn}`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/json', apikey:SYNC.key, Authorization:`Bearer ${SYNC.key}`}, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('sync ' + r.status); const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+let syncBusy = false, syncAgain = false, syncT = null;
+syncSoon = () => { if(!S.sync || !syncReady()) return; clearTimeout(syncT); syncT = setTimeout(syncNow, 4000); };
+async function syncNow(){
+  if(!S.sync || !syncReady() || !navigator.onLine) return;
+  if(syncBusy){ syncAgain = true; return; } syncBusy = true;
+  try{
+    const before = JSON.stringify(syncPart(S));
+    mergeInto(S, await rpc('kl_get', {code:S.sync}));
+    await rpc('kl_put', {code:S.sync, data:syncPart(S)});
+    S.syncAt = new Date().toISOString(); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+    if(JSON.stringify(syncPart(S)) !== before){ updateBar(); if(current === 'home') home(); }
+    const row = $('#syncRow'); if(row) row.innerHTML = syncText();
+  }catch(e){ const row = $('#syncRow'); if(row) row.innerHTML = syncText('Could not reach the sync service; trying again later.'); }
+  syncBusy = false; if(syncAgain){ syncAgain = false; syncSoon(); }
+}
+/* turning it on (new code) or joining (existing code): this device's はなまる count only what the family total lacks */
+async function syncStart(code, join){
+  const prev = S.sync; S.sync = code;
+  try{
+    const r = join ? await rpc('kl_get', {code}) : null;
+    if(join && !r){ S.sync = prev; toast('<span>No family with that code</span>'); return false; }
+    const total = sumHana(r && r.hanaDev);
+    S.hanaDev = Object.assign({}, r && r.hanaDev); S.hanaDev[DEV] = Math.max(S.hanaDev[DEV] || 0, S.hana - total);
+    mergeInto(S, r); save(); await syncNow(); return true;
+  }catch(e){ S.sync = prev; toast('<span>Could not reach the sync service</span>'); return false; }
+}
+function syncText(err){
+  if(!syncReady()) return 'Sync between devices is not set up yet.';
+  if(!S.sync) return 'Keep progress the same on iPhone and iPad: turn on sync here, then type the family code on the other device.';
+  const ago = S.syncAt ? Math.round((Date.now() - new Date(S.syncAt)) / 60000) : null;
+  return `Family code <b class="code">${S.sync}</b> · ${err || (ago === null ? 'not synced yet' : ago < 1 ? 'synced just now' : `synced ${ago} min ago`)}`;
+}
+function bindSync(){
+  const on = $('#syncOn'), join = $('#syncJoin'), off = $('#syncOff');
+  if(on) on.onclick = async () => { on.disabled = true; if(await syncStart(newCode(), false)){ go('parent'); toast('<span>Sync is on</span>'); } else on.disabled = false; };
+  if(join) join.onclick = async () => { const c = cleanCode($('#syncCode').value); if(c.length !== 14){ toast('<span>The code has 12 letters and numbers</span>'); return; }
+    join.disabled = true; if(await syncStart(c, true)){ go('parent'); toast('<span>Joined: progress synced</span>'); } else join.disabled = false; };
+  if(off) off.onclick = () => { S.sync = null; S.syncAt = null; save(); go('parent'); toast('<span>Sync is off on this device</span>'); };
+}
+addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden'){ clearTimeout(syncT); syncNow(); } else syncSoon(); });
+addEventListener('online', syncSoon);
+setTimeout(syncNow, 1200);
 
 /* ---------- boot ---------- */
 loadFamily();
