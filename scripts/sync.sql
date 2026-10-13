@@ -21,3 +21,4 @@ $$;
 
 revoke all on function public.kl_get(text), public.kl_put(text, jsonb) from public;
 grant execute on function public.kl_get(text), public.kl_put(text, jsonb) to anon;
+revoke execute on function public.kl_get(text), public.kl_put(text, jsonb) from authenticated;   -- no sign-in is used

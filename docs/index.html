@@ -2300,7 +2300,7 @@ function parent(){
    phrases or settings. Supabase project kidlingo-sync: table kl_sync behind two functions, kl_get(code) / kl_put(code,
    data); the table itself is closed to the public key. Merging never loses progress: the larger count wins per word or
    topic, lists are joined, and はなまる are counted per device (S.hanaDev) so nothing is counted twice. */
-const SYNC = {url:'', key:''};   // filled in once the Supabase project exists; empty = the section shows "not set up"
+const SYNC = {url:'https://vabztuowsvvkiczhkzwv.supabase.co', key:'sb_publishable_bicU5yXeGretbk3bLaGiVw_cVRcX6hP'};   // public key: can only call kl_get / kl_put
 const DEV = (() => { try{ let d = localStorage.getItem('kidlingo.dev'); if(!d){ d = Math.random().toString(36).slice(2, 10); localStorage.setItem('kidlingo.dev', d); } return d; }catch(e){ return 'dev'; } })();
 const syncReady = () => !!(SYNC.url && SYNC.key);
 const CODE_ABC = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
